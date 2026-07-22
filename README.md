@@ -1,5 +1,6 @@
-# Origin Income V2
+# Origin Income V4
 
-Premium Next.js website with upgraded logo, animations, design system, countdown and 30-question onboarding.
+Premium Next.js landing experience with Origin AI Co-Founder positioning, cinematic intro, interactive AI engine, dashboard preview, 30-question onboarding, legal pages and countdown.
 
-Upload the contents to the existing GitHub repository and commit. Vercel deploys automatically.
+## Deploy
+Upload the complete contents of this folder to the connected GitHub repository. Vercel automatically deploys the commit.
