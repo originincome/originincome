@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MouseEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 
 function Logo({ size = 44 }: { size?: number }) {
   const id = `origin-v4-${size}`;
@@ -204,6 +204,29 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [contactTopic, setContactTopic] = useState("general");
+  const [contactStatus, setContactStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+
+  const submitContact = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setContactStatus("sending");
+    const form = event.currentTarget;
+    const payload = Object.fromEntries(new FormData(form).entries());
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error("Request failed");
+      form.reset();
+      setContactTopic("general");
+      setContactStatus("success");
+    } catch {
+      setContactStatus("error");
+    }
+  };
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIntro(false), 4300);
@@ -666,17 +689,58 @@ export default function Home() {
 
         <section className="contactSection shell" id="contact">
           <div className="contactGlow" />
-          <div>
+          <div className="contactHeader">
             <p className="kicker">Contact Origin</p>
-            <h2>Let&apos;s build<br />what comes next.</h2>
-          </div>
-          <div className="contactRight">
-            <p>
-              Fragen, Partnerschaften oder frühes Interesse an Origin Income?
-              Schreib uns direkt – wir freuen uns auf deine Nachricht.
-            </p>
-            <a href="mailto:hello@originincome.com">hello@originincome.com <span>↗</span></a>
+            <h2>How can<br />we help?</h2>
+            <p>Wähle den passenden Bereich oder sende uns direkt eine Nachricht. Wir sorgen dafür, dass deine Anfrage am richtigen Ort landet.</p>
             <small>Antwort in der Regel innerhalb von 1–2 Werktagen.</small>
+          </div>
+
+          <div className="contactWorkspace">
+            <div className="contactChannels" aria-label="Kontaktbereiche">
+              {[
+                ["general", "01", "General inquiries", "Allgemeine Fragen, Partnerschaften und Informationen", "hello@originincome.com"],
+                ["support", "02", "Technical support", "Konto, Origin AI und technische Unterstützung", "support@originincome.com"],
+                ["billing", "03", "Billing & payments", "Rechnungen, Zahlungen und Abonnements", "billing@originincome.com"],
+                ["privacy", "04", "Privacy & data", "Datenschutz, Auskunft und Löschanfragen", "privacy@originincome.com"],
+              ].map(([value, number, title, copy, email]) => (
+                <div
+                  key={value}
+                  role="button"
+                  tabIndex={0}
+                  className={`contactChannel ${contactTopic === value ? "active" : ""}`}
+                  onClick={() => setContactTopic(value)}
+                  onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setContactTopic(value); }}
+                >
+                  <span>{number}</span>
+                  <strong>{title}</strong>
+                  <p>{copy}</p>
+                  <a href={`mailto:${email}`} onClick={(event) => event.stopPropagation()}>{email} ↗</a>
+                </div>
+              ))}
+            </div>
+
+            <form className="contactForm" onSubmit={submitContact}>
+              <input type="hidden" name="topic" value={contactTopic} />
+              <div className="contactFormTop">
+                <div><span>Secure message</span><strong>Send us a message</strong></div>
+                <i><b /> Online</i>
+              </div>
+              <div className="contactFields">
+                <label><span>Name</span><input name="name" type="text" autoComplete="name" required placeholder="Dein Name" /></label>
+                <label><span>E-Mail</span><input name="email" type="email" autoComplete="email" required placeholder="name@company.com" /></label>
+                <label className="contactSubject"><span>Betreff</span><input name="subject" type="text" required placeholder="Worum geht es?" /></label>
+                <label className="contactMessage"><span>Nachricht</span><textarea name="message" required rows={6} placeholder="Beschreibe kurz, wie wir dir helfen können." /></label>
+              </div>
+              <div className="contactFormFooter">
+                <p>Mit dem Absenden bestätigst du, dass wir deine Angaben zur Bearbeitung deiner Anfrage verwenden dürfen.</p>
+                <button type="submit" disabled={contactStatus === "sending"}>
+                  {contactStatus === "sending" ? "Wird gesendet …" : "Nachricht senden"}<span>↗</span>
+                </button>
+              </div>
+              {contactStatus === "success" && <div className="contactNotice success">Danke. Deine Nachricht ist sicher bei uns angekommen.</div>}
+              {contactStatus === "error" && <div className="contactNotice error">Das Senden hat gerade nicht funktioniert. Schreib uns bitte direkt an hello@originincome.com.</div>}
+            </form>
           </div>
         </section>
 
