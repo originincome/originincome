@@ -1,18 +1,5 @@
-# Origin Income
+# Origin Income V2
 
-Premium Coming-Soon-Website für https://originincome.com
+Premium Next.js website with upgraded logo, animations, design system, countdown and 30-question onboarding.
 
-## Stack
-- Next.js App Router
-- TypeScript
-- reines CSS
-- optimiert für Vercel
-
-## Warteliste aktivieren
-In Vercel unter Project → Settings → Environment Variables `WAITLIST_WEBHOOK_URL` anlegen.
-
-## Vor Livegang
-- vollständige Adresse im Impressum
-- finale Datenschutzerklärung
-- Wartelisten-Webhook
-- finale Social-Media-Links
+Upload the contents to the existing GitHub repository and commit. Vercel deploys automatically.

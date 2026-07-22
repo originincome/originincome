@@ -1,5 +1,117 @@
 "use client";
-import { FormEvent, useEffect, useMemo, useState } from "react";
-function Logo({size=44}:{size?:number}){const id=`gold-${size}`;return <svg width={size} height={size} viewBox="0 0 120 120" fill="none" aria-hidden="true"><defs><linearGradient id={id} x1="16" y1="10" x2="102" y2="110"><stop stopColor="#F7DF8A"/><stop offset=".48" stopColor="#D4AF37"/><stop offset="1" stopColor="#8B5F0B"/></linearGradient></defs><circle cx="60" cy="60" r="53" stroke={`url(#${id})`} strokeWidth="3"/><path d="M31 82 56 35 76 67" stroke={`url(#${id})`} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round"/><path d="m55 82 33-37" stroke={`url(#${id})`} strokeWidth="7" strokeLinecap="round"/><path d="M77 45h11v11" stroke={`url(#${id})`} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-function Countdown(){const target=useMemo(()=>new Date("2026-08-15T19:00:00+02:00").getTime(),[]);const[left,setLeft]=useState(Math.max(0,target-Date.now()));useEffect(()=>{const t=window.setInterval(()=>setLeft(Math.max(0,target-Date.now())),1000);return()=>window.clearInterval(t)},[target]);const v=[["Tage",Math.floor(left/86400000)],["Stunden",Math.floor((left%86400000)/3600000)],["Minuten",Math.floor((left%3600000)/60000)],["Sekunden",Math.floor((left%60000)/1000)]];return <div className="countdown">{v.map(([l,x])=><div className="countBox" key={l}><strong>{String(x).padStart(2,"0")}</strong><span>{l}</span></div>)}</div>}
-export default function Home(){const[intro,setIntro]=useState(true);const[email,setEmail]=useState("");const[status,setStatus]=useState("");const[sending,setSending]=useState(false);useEffect(()=>{const t=window.setTimeout(()=>setIntro(false),4400);return()=>window.clearTimeout(t)},[]);async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setSending(true);setStatus("");try{const r=await fetch("/api/waitlist",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email})});const j=await r.json();if(!r.ok)throw new Error(j.message||"Eintrag momentan nicht möglich.");setStatus("Willkommen am Ursprung. Dein Frühzugang ist reserviert.");setEmail("")}catch(err){setStatus(err instanceof Error?err.message:"Bitte versuche es später erneut.")}finally{setSending(false)}}return <><div className={`intro ${intro?"":"introDone"}`}><div className="introMark"><Logo size={166}/></div><p className="introOne">Jeder Erfolg hat einen Ursprung.</p><p className="introTwo">Willkommen bei Origin Income.</p></div><div className="grain"/><div className="ambient ambientOne"/><div className="ambient ambientTwo"/><header className="nav shell"><a className="brand" href="#top"><Logo/><span>ORIGIN <b>INCOME</b></span></a><nav><a href="#system">Das System</a><a href="#prinzip">Unser Prinzip</a><a className="navCta" href="#fruehzugang">Frühzugang</a></nav></header><main id="top"><section className="hero shell"><div className="heroCopy"><div className="overline"><i/> Eine neue Art, ein zweites Einkommen aufzubauen</div><h1>Baue heute.<br/><em>Lebe morgen.</em></h1><p className="lead">Origin Income verwandelt deine Ziele, Fähigkeiten und Möglichkeiten in einen klaren, personalisierten Umsetzungsplan — Schritt für Schritt, KI-gestützt und ohne leere Versprechen.</p><form className="signup" id="fruehzugang" onSubmit={submit}><label className="srOnly" htmlFor="email">E-Mail-Adresse</label><input id="email" type="email" autoComplete="email" required placeholder="Deine E-Mail-Adresse" value={email} onChange={e=>setEmail(e.target.value)}/><button disabled={sending} type="submit">{sending?"Wird reserviert…":"Frühzugang sichern"}<span>↗</span></button></form><div className="formMeta"><span>{status||"Exklusive Einblicke. Kein Spam. Jederzeit abmeldbar."}</span><span>Limitierte erste Plätze</span></div></div><div className="heroVisual"><div className="orbit orbitA"/><div className="orbit orbitB"/><div className="goldGlow"/><div className="productCard"><div className="cardTop"><span>ORIGIN / 01</span><span>COMING SOON</span></div><div className="cardLogo"><Logo size={126}/></div><div className="cardWord">ORIGIN <b>INCOME</b></div><div className="cardTag">BAUE HEUTE. LEBE MORGEN.</div><div className="launchLine"><span>Launch</span><span>15. August 2026</span></div><Countdown/></div><div className="floatChip chipA">KI-gestützt</div><div className="floatChip chipB">Schritt für Schritt</div></div></section><section className="statement"><div className="shell statementInner"><span>KEIN HYPE.</span><span>KEINE ABKÜRZUNG.</span><strong>EIN SYSTEM.</strong></div></section><section className="section shell" id="system"><div className="sectionHead"><div><p className="kicker">Das System</p><h2>Vom Wunsch zur<br/>echten Umsetzung.</h2></div><p>Die meisten Menschen scheitern nicht an fehlenden Ideen. Sie scheitern an Überforderung, fehlender Richtung und daran, dass niemand den nächsten sinnvollen Schritt sichtbar macht.</p></div><div className="steps">{[["01","Verstehen","Deine Ziele, Zeit, Fähigkeiten, Interessen und dein Budget werden zu einem realistischen Ausgangspunkt."],["02","Erschaffen","Du erhältst eine passende Geschäftsidee, Positionierung, Marke, Angebot und konkrete Inhalte."],["03","Umsetzen","Ein geführter Plan macht aus Strategie tägliche, machbare Schritte — ohne Informationschaos."],["04","Wachsen","Du verbesserst, automatisierst und skalierst auf Basis echter Ergebnisse statt blinder Trends."]].map(([n,t,c])=><article className="step" key={n}><span className="stepNo">{n}</span><div className="stepDot"/><h3>{t}</h3><p>{c}</p></article>)}</div></section><section className="darkPanel" id="prinzip"><div className="shell panelGrid"><div className="panelQuote"><p className="kicker">Unser Prinzip</p><blockquote>„Nicht schneller wirken.<br/><em>Weiter kommen.</em>“</blockquote></div><div className="principles"><article><span>01</span><div><h3>Substanz vor Show</h3><p>Kein gemieteter Luxus, keine erfundenen Ergebnisse, keine falsche Dringlichkeit.</p></div></article><article><span>02</span><div><h3>Führung statt Informationsflut</h3><p>Du bekommst nicht mehr Wissen als nötig, sondern den richtigen nächsten Schritt.</p></div></article><article><span>03</span><div><h3>Langfristigkeit statt Lotterie</h3><p>Wir bauen Assets, Fähigkeiten und Systeme, die mit dir wachsen können.</p></div></article></div></div></section><section className="finalCta shell"><p className="kicker">Der Ursprung beginnt jetzt</p><h2>Dein zweites Einkommen<br/>braucht keinen Zufall.</h2><p>Es braucht eine klare Richtung, ehrliche Arbeit und ein System, das dich nicht allein lässt.</p><a href="#fruehzugang">Platz auf der Warteliste sichern <span>↗</span></a></section></main><footer className="footer shell"><div className="footerBrand"><Logo size={34}/><span>ORIGIN <b>INCOME</b></span></div><div>© 2026 Origin Income · Schweiz</div><div className="footerLinks"><a href="mailto:hello@originincome.com">hello@originincome.com</a><a href="/impressum">Impressum</a><a href="/datenschutz">Datenschutz</a></div></footer></>}
+import Link from "next/link";
+import {useEffect,useMemo,useState} from "react";
+
+function Logo({size=44}:{size?:number}) {
+  const id=`gold-${size}`;
+  return <svg width={size} height={size} viewBox="0 0 160 160" fill="none" aria-hidden="true">
+    <defs>
+      <linearGradient id={id} x1="20" y1="10" x2="140" y2="150">
+        <stop stopColor="#FFF2A8"/><stop offset=".45" stopColor="#D4AF37"/><stop offset="1" stopColor="#7F5208"/>
+      </linearGradient>
+      <filter id={`shadow-${size}`} x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="13" stdDeviation="10" floodColor="#D4AF37" floodOpacity=".28"/>
+      </filter>
+    </defs>
+    <g filter={`url(#shadow-${size})`}>
+      <path d="M80 10 138 44v68l-58 38-58-38V44L80 10Z" fill="#090909" stroke={`url(#${id})`} strokeWidth="3"/>
+      <path d="M43 105 73 49l24 40" stroke={`url(#${id})`} strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="m72 107 46-52" stroke={`url(#${id})`} strokeWidth="10" strokeLinecap="round"/>
+      <path d="M101 54h17v17" stroke={`url(#${id})`} strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
+    </g>
+  </svg>
+}
+
+function Countdown(){
+  const target=useMemo(()=>new Date("2026-08-15T19:00:00+02:00").getTime(),[]);
+  const [left,setLeft]=useState(Math.max(0,target-Date.now()));
+  useEffect(()=>{const t=setInterval(()=>setLeft(Math.max(0,target-Date.now())),1000);return()=>clearInterval(t)},[target]);
+  const vals=[["Tage",Math.floor(left/86400000)],["Std.",Math.floor((left%86400000)/3600000)],["Min.",Math.floor((left%3600000)/60000)],["Sek.",Math.floor((left%60000)/1000)]];
+  return <div className="countdown">{vals.map(([l,v])=><div className="countItem" key={l}><strong>{String(v).padStart(2,"0")}</strong><span>{l}</span></div>)}</div>
+}
+
+const features=[
+  ["01","Profil verstehen","30 präzise Fragen erfassen Ziele, Zeit, Budget, Interessen, Fähigkeiten und Risikoprofil."],
+  ["02","Opportunity Engine","Das System filtert passende Geschäftsmodelle und priorisiert sie nach Machbarkeit und Potenzial."],
+  ["03","Brand Builder","Name, Positionierung, visuelle Identität, Angebot und Markenstimme entstehen aus einem System."],
+  ["04","Execution Roadmap","Aus der Idee wird ein geführter Plan mit konkreten Aufgaben, Meilensteinen und Fortschritt."]
+];
+
+export default function Home(){
+  const [intro,setIntro]=useState(true);
+  useEffect(()=>{const t=setTimeout(()=>setIntro(false),3900);return()=>clearTimeout(t)},[]);
+  return <>
+    <div className={`intro ${intro?"":"gone"}`}>
+      <div className="introLogo"><Logo size={150}/></div>
+      <div className="introLine introOne">Jeder Erfolg hat einen Ursprung.</div>
+      <div className="introLine introTwo">Willkommen bei Origin Income.</div>
+    </div>
+    <div className="noise"/><div className="aurora a1"/><div className="aurora a2"/>
+    <header className="nav shell">
+      <Link href="/" className="brand"><Logo/><span>ORIGIN <b>INCOME</b></span></Link>
+      <nav><a href="#system">System</a><a href="#identity">Identität</a><Link className="navBtn" href="/onboarding">AI-Onboarding starten</Link></nav>
+    </header>
+    <main>
+      <section className="hero shell">
+        <div className="heroCopy">
+          <div className="eyebrow"><span/> Origin Intelligence System</div>
+          <h1>Dein zweites Einkommen.<br/><em>Mit System gebaut.</em></h1>
+          <p className="lead">Origin Income verbindet KI, Strategie und klare Umsetzung zu einem persönlichen Weg vom ersten Gedanken bis zum funktionierenden Business.</p>
+          <div className="heroActions">
+            <Link className="primary" href="/onboarding">30-Fragen-Analyse starten <i>↗</i></Link>
+            <a className="secondary" href="#system">System entdecken</a>
+          </div>
+          <div className="proof"><span><b>30</b> Profilfragen</span><span><b>1</b> persönliche Roadmap</span><span><b>0</b> leere Versprechen</span></div>
+        </div>
+        <div className="scene">
+          <div className="beam"/><div className="ring r1"/><div className="ring r2"/><div className="ring r3"/>
+          <div className="core">
+            <div className="coreTop"><span>ORIGIN / INTELLIGENCE</span><span>V2.0</span></div>
+            <div className="coreLogo"><Logo size={150}/></div>
+            <div className="coreName">ORIGIN <b>INCOME</b></div>
+            <div className="coreText">PERSONAL BUSINESS OPERATING SYSTEM</div>
+            <div className="signal"><span/><span/><span/><span/><span/></div>
+            <div className="launch"><span>Public Launch</span><b>15. August 2026</b></div>
+            <Countdown/>
+          </div>
+          <div className="dataCard dc1"><small>Profil Match</small><strong>94%</strong><span>Business-Fit</span></div>
+          <div className="dataCard dc2"><small>Nächster Schritt</small><strong>01</strong><span>Positionierung</span></div>
+          <div className="dataCard dc3"><small>System Status</small><strong>LIVE</strong><span>Roadmap aktiv</span></div>
+        </div>
+      </section>
+      <section className="ticker"><div><span>KLARHEIT</span><i>◆</i><span>STRATEGIE</span><i>◆</i><span>IDENTITÄT</span><i>◆</i><span>UMSETZUNG</span><i>◆</i><span>WACHSTUM</span></div></section>
+      <section className="section shell" id="system">
+        <div className="sectionHead">
+          <div><p className="kicker">Das Origin System</p><h2>Aus Möglichkeiten wird<br/>eine klare Richtung.</h2></div>
+          <p>Kein generischer Chatbot und keine Sammlung zufälliger Tipps. Origin Income führt durch einen strukturierten Prozess, der Entscheidungen vorbereitet und Umsetzung sichtbar macht.</p>
+        </div>
+        <div className="featureGrid">{features.map(([n,t,c])=><article className="feature" key={n}><div className="featureNo">{n}</div><div className="featureIcon"><span/><span/></div><h3>{t}</h3><p>{c}</p></article>)}</div>
+      </section>
+      <section className="identity" id="identity">
+        <div className="shell identityGrid">
+          <div className="brandBoard">
+            <div className="boardTop"><span>ORIGIN / BRAND SYSTEM</span><span>01—06</span></div>
+            <div className="bigLogo"><Logo size={190}/></div>
+            <div className="palette"><i/><i/><i/><i/></div>
+            <div className="typeSpec"><strong>Aa</strong><div><b>Manrope</b><span>Precision / Confidence / Clarity</span></div></div>
+            <div className="gridLines"/>
+          </div>
+          <div className="identityCopy">
+            <p className="kicker">Komplette Markenidentität</p>
+            <h2>Luxus ohne Show.<br/>Technologie ohne Kälte.</h2>
+            <p>Die Marke verbindet schwarze Präzision mit warmem Gold. Ruhig, souverän und glaubwürdig – für Menschen, die nicht träumen wollen, sondern bauen.</p>
+            <ul><li><span>01</span>Dreidimensionales Signet mit Aufwärtsbewegung</li><li><span>02</span>Modulares Designsystem für Website und Plattform</li><li><span>03</span>Typografie für Premium, Vertrauen und Lesbarkeit</li><li><span>04</span>Illustrationssystem aus Licht, Daten und Struktur</li></ul>
+          </div>
+        </div>
+      </section>
+      <section className="onboardCta shell">
+        <div className="ctaGlow"/>
+        <p className="kicker">Origin Profile Engine</p>
+        <h2>30 Fragen.<br/>Ein klarer Ausgangspunkt.</h2>
+        <p>Starte die erste Analyse und erhalte sofort ein strukturiertes Profil mit geeigneter Business-Richtung, Fokus und nächsten Schritten.</p>
+        <Link href="/onboarding">AI-Onboarding starten <span>↗</span></Link>
+      </section>
+    </main>
+    <footer className="footer shell"><div className="footerBrand"><Logo size={34}/><span>ORIGIN <b>INCOME</b></span></div><div>© 2026 Origin Income · Schweiz</div><div><a href="mailto:hello@originincome.com">hello@originincome.com</a><Link href="/impressum">Impressum</Link><Link href="/datenschutz">Datenschutz</Link></div></footer>
+  </>
+}
