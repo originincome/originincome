@@ -179,13 +179,53 @@ const dashboardTasks = [
   ["03", "Erstelle die erste Landingpage-Struktur", "25 min", "AI assisted"],
 ];
 
+
+const workspaceItems = [
+  ["Businessplan", "Strategie, Markt, Zielgruppe und Finanzlogik"],
+  ["Pitch Deck", "Eine überzeugende Präsentation für Partner und Investoren"],
+  ["AGB", "Individueller, bearbeitbarer Dokumententwurf"],
+  ["Datenschutz", "Passender Entwurf für Website und Geschäftsmodell"],
+  ["Impressum", "Strukturierter Entwurf anhand deiner Firmendaten"],
+  ["Offerten", "Professionelle Angebote im eigenen Branding"],
+  ["Verträge", "Anpassbare Vertragsentwürfe für typische Geschäftsprozesse"],
+  ["Rechnungen", "Gebrandete Rechnungen mit Positionen und Berechnungen"],
+];
+
+const faqItems = [
+  ["Was ist Origin AI?", "Origin AI ist dein digitaler Co-Founder. Die Plattform verbindet persönliche Analyse, Geschäftsstrategie, Branding, Dokumente und tägliche Umsetzung in einem durchgängigen System."],
+  ["Sind die Ergebnisse individuell?", "Ja. Empfehlungen und Inhalte basieren auf deinen Antworten, Zielen, Fähigkeiten, Ressourcen und deinem tatsächlichen Fortschritt."],
+  ["Kann Origin AI rechtliche Dokumente erstellen?", "Origin AI kann individualisierte und bearbeitbare Entwürfe erstellen. Rechtlich relevante Dokumente sollten vor dem Einsatz durch eine qualifizierte Fachperson geprüft werden."],
+  ["Wann wird der AI Workspace verfügbar?", "Die erste öffentliche Version ist für den Launch am 15. August 2026 vorgesehen. Einzelne Module können schrittweise freigeschaltet werden."],
+  ["Was kostet Origin Income?", "Zum Start wird es einen kostenlosen Einstieg und kostenpflichtige Pläne für umfassendere AI- und Workspace-Funktionen geben. Die finalen Preise werden vor dem Launch veröffentlicht."],
+];
+
 export default function Home() {
   const [intro, setIntro] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [previewItem, setPreviewItem] = useState<string | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIntro(false), 4300);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen || previewItem ? "hidden" : "";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        setPreviewItem(null);
+      }
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen, previewItem]);
+
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <>
@@ -202,18 +242,104 @@ export default function Home() {
       <div className="aurora a1" />
       <div className="aurora a2" />
 
-      <header className="nav shell">
+      <header className="nav shell commandNav">
         <Link href="/" className="brand">
           <Logo />
           <span>ORIGIN <b>INCOME</b></span>
         </Link>
-        <nav>
-          <a href="#origin-ai">Origin AI</a>
-          <a href="#system">System</a>
-          <a href="#dashboard">Dashboard</a>
-          <Link className="navBtn" href="/onboarding">AI Discovery starten</Link>
-        </nav>
+        <div className="navActions">
+          <Link className="navBtn desktopLaunch" href="/onboarding">AI Discovery starten</Link>
+          <button
+            className={`menuTrigger ${menuOpen ? "active" : ""}`}
+            type="button"
+            aria-label="Menü öffnen"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(true)}
+          >
+            <span className="menuTriggerText">Menu</span>
+            <span className="menuLines"><i /><i /></span>
+          </button>
+        </div>
       </header>
+
+      <div className={`commandOverlay ${menuOpen ? "open" : ""}`} aria-hidden={!menuOpen}>
+        <button className="commandBackdrop" aria-label="Menü schliessen" onClick={closeMenu} />
+        <aside className="commandPanel">
+          <div className="commandTop">
+            <div className="commandIdentity"><Logo size={38} /><span>ORIGIN COMMAND</span></div>
+            <button className="commandClose" type="button" onClick={closeMenu} aria-label="Menü schliessen">
+              <i /><i />
+            </button>
+          </div>
+
+          <div className="commandBody">
+            <div className="commandIntro">
+              <small>ORIGIN INCOME</small>
+              <h2>Your business.<br /><em>One intelligent system.</em></h2>
+              <p>Entdecke Origin AI, den Workspace und alle Bereiche der Plattform.</p>
+            </div>
+
+            <div className="commandColumns">
+              <div className="commandGroup">
+                <span className="commandLabel">Product</span>
+                <a href="#origin-ai" onClick={closeMenu}><b>01</b><span>Origin AI<small>Dein digitaler Co-Founder</small></span><i>↗</i></a>
+                <a href="/onboarding" onClick={closeMenu}><b>02</b><span>AI Discovery<small>30 Fragen, persönlicher Report</small></span><i>↗</i></a>
+                <a href="#dashboard" onClick={closeMenu}><b>03</b><span>Dashboard<small>Roadmap, Missionen und Fortschritt</small></span><i>↗</i></a>
+                <a href="#workspace" onClick={closeMenu}><b>04</b><span>AI Workspace<small>Dokumente und Business Assets</small></span><i>↗</i></a>
+              </div>
+
+              <div className="commandGroup">
+                <span className="commandLabel">Company</span>
+                <a href="#pricing" onClick={closeMenu}><b>01</b><span>Pricing<small>Pläne für jede Aufbauphase</small></span><i>↗</i></a>
+                <a href="#faq" onClick={closeMenu}><b>02</b><span>FAQ<small>Die wichtigsten Antworten</small></span><i>↗</i></a>
+                <a href="#about" onClick={closeMenu}><b>03</b><span>About<small>Vision und Prinzipien</small></span><i>↗</i></a>
+                <a href="#contact" onClick={closeMenu}><b>04</b><span>Contact<small>Direkter Kontakt zu Origin</small></span><i>↗</i></a>
+              </div>
+            </div>
+
+            <div className="commandWorkspace">
+              <div className="commandWorkspaceHead">
+                <div><small>AI WORKSPACE</small><strong>Business documents, built with context.</strong></div>
+                <span>COMING SOON</span>
+              </div>
+              <div className="commandPills">
+                {workspaceItems.map(([title]) => (
+                  <button key={title} type="button" onClick={() => { setMenuOpen(false); setPreviewItem(title); }}>
+                    <i>+</i>{title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="commandFooter">
+            <div><span>Public Launch</span><b>15. August 2026</b></div>
+            <Link href="/onboarding" onClick={closeMenu}>Launch Origin AI <i>↗</i></Link>
+          </div>
+        </aside>
+      </div>
+
+      <div className={`previewModal ${previewItem ? "open" : ""}`} aria-hidden={!previewItem}>
+        <button className="previewBackdrop" aria-label="Vorschau schliessen" onClick={() => setPreviewItem(null)} />
+        <div className="previewCard">
+          <button className="previewClose" type="button" onClick={() => setPreviewItem(null)} aria-label="Vorschau schliessen">×</button>
+          <div className="previewIcon"><Logo size={72} /></div>
+          <span className="previewBadge">AI WORKSPACE · COMING SOON</span>
+          <h3>{previewItem}</h3>
+          <p>
+            Origin AI erstellt dieses Dokument künftig anhand deines Unternehmens,
+            deiner Marke, deiner Angebote und deiner gespeicherten Firmendaten.
+          </p>
+          <div className="previewProcess">
+            <div><i>✓</i><span>Unternehmenskontext übernehmen</span></div>
+            <div><i>✓</i><span>Inhalt intelligent personalisieren</span></div>
+            <div><i>✓</i><span>Origin Branding anwenden</span></div>
+            <div><i>✓</i><span>Bearbeitbaren Export vorbereiten</span></div>
+          </div>
+          <small>Rechtlich relevante Dokumente sind Entwürfe und sollten fachlich geprüft werden.</small>
+          <Link href="/onboarding" onClick={() => setPreviewItem(null)}>Origin AI kennenlernen <span>↗</span></Link>
+        </div>
+      </div>
 
       <main>
         <section className="hero heroV4 shell">
@@ -418,6 +544,142 @@ export default function Home() {
           </div>
         </section>
 
+
+        <section className="workspaceSection shell" id="workspace">
+          <div className="sectionHead workspaceHead">
+            <div>
+              <p className="kicker">Origin AI Workspace</p>
+              <h2>Deine wichtigsten Dokumente.<br />Intelligent vorbereitet.</h2>
+            </div>
+            <p>
+              Origin AI verbindet Unternehmensdaten, Strategie und Branding.
+              So entstehen keine isolierten Vorlagen, sondern passende, bearbeitbare Business-Dokumente.
+            </p>
+          </div>
+
+          <div className="workspaceGrid">
+            {workspaceItems.map(([title, description], index) => (
+              <button className="workspaceCard" type="button" key={title} onClick={() => setPreviewItem(title)}>
+                <div className="workspaceCardTop">
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <i>↗</i>
+                </div>
+                <div className="documentGlyph"><i /><i /><i /></div>
+                <h3>{title}</h3>
+                <p>{description}</p>
+                <small>AI GENERATED · EDITABLE</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="workspaceNotice">
+            <div><Logo size={42} /><span><b>Built with your business context.</b><small>Firmendaten, Branding, Angebote und Strategie fliessen automatisch ein.</small></span></div>
+            <span className="workspaceStatus"><i /> IN DEVELOPMENT</span>
+          </div>
+        </section>
+
+        <section className="pricingSection" id="pricing">
+          <div className="shell">
+            <div className="centerSectionHead">
+              <p className="kicker">Pricing Preview</p>
+              <h2>Start small.<br />Build without limits.</h2>
+              <p>Die finalen Preise werden vor dem öffentlichen Launch bekannt gegeben.</p>
+            </div>
+            <div className="pricingGrid">
+              <article>
+                <span>DISCOVERY</span>
+                <h3>Free</h3>
+                <p>Der intelligente Einstieg in dein persönliches Unternehmerprofil.</p>
+                <ul>
+                  <li>30-Fragen AI Discovery</li>
+                  <li>Persönlicher Profil-Snapshot</li>
+                  <li>Erste Business-Empfehlung</li>
+                </ul>
+                <Link href="/onboarding">Discovery starten <i>↗</i></Link>
+              </article>
+              <article className="featuredPrice">
+                <div className="popularBadge">MOST POPULAR</div>
+                <span>FOUNDER</span>
+                <h3>Coming soon</h3>
+                <p>Das komplette Operating System für Aufbau, Marke und Umsetzung.</p>
+                <ul>
+                  <li>Vollständiger AI Business Report</li>
+                  <li>Roadmap und Daily Missions</li>
+                  <li>Origin AI Co-Founder</li>
+                  <li>AI Workspace & Dokumente</li>
+                </ul>
+                <a href="#contact">Launch-Updates erhalten <i>↗</i></a>
+              </article>
+              <article>
+                <span>BUSINESS</span>
+                <h3>Custom</h3>
+                <p>Für Teams und Unternehmen mit erweiterten Anforderungen.</p>
+                <ul>
+                  <li>Mehrere Projekte und Nutzer</li>
+                  <li>Individuelle Workflows</li>
+                  <li>Erweiterte Dokument-Module</li>
+                </ul>
+                <a href="mailto:hello@originincome.com">Kontakt aufnehmen <i>↗</i></a>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="aboutSection shell" id="about">
+          <div className="aboutMark"><Logo size={145} /></div>
+          <div className="aboutCopy">
+            <p className="kicker">About Origin</p>
+            <h2>Entrepreneurship should feel clear – not chaotic.</h2>
+            <p>
+              Origin Income entsteht aus einer einfachen Überzeugung: Menschen brauchen nicht noch mehr
+              unverbundene Tools. Sie brauchen ein intelligentes System, das ihre Situation versteht,
+              Entscheidungen strukturiert und den nächsten sinnvollen Schritt sichtbar macht.
+            </p>
+            <div className="aboutPrinciples">
+              <div><span>01</span><b>Personal before generic</b></div>
+              <div><span>02</span><b>Execution before information</b></div>
+              <div><span>03</span><b>One system before ten tools</b></div>
+            </div>
+          </div>
+        </section>
+
+        <section className="faqSection shell" id="faq">
+          <div className="faqIntro">
+            <p className="kicker">Frequently Asked Questions</p>
+            <h2>Questions,<br />answered clearly.</h2>
+            <p>No fluff. Die wichtigsten Informationen rund um Origin AI, Dokumente und Launch.</p>
+          </div>
+          <div className="faqList">
+            {faqItems.map(([question, answer], index) => (
+              <button
+                type="button"
+                className={`faqItem ${openFaq === index ? "open" : ""}`}
+                key={question}
+                onClick={() => setOpenFaq(openFaq === index ? null : index)}
+              >
+                <div><span>{String(index + 1).padStart(2, "0")}</span><strong>{question}</strong><i>+</i></div>
+                <p>{answer}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="contactSection shell" id="contact">
+          <div className="contactGlow" />
+          <div>
+            <p className="kicker">Contact Origin</p>
+            <h2>Let&apos;s build<br />what comes next.</h2>
+          </div>
+          <div className="contactRight">
+            <p>
+              Fragen, Partnerschaften oder frühes Interesse an Origin Income?
+              Schreib uns direkt – wir freuen uns auf deine Nachricht.
+            </p>
+            <a href="mailto:hello@originincome.com">hello@originincome.com <span>↗</span></a>
+            <small>Antwort in der Regel innerhalb von 1–2 Werktagen.</small>
+          </div>
+        </section>
+
         <section className="onboardCta shell">
           <div className="ctaGlow" />
           <p className="kicker">Origin AI Discovery</p>
@@ -434,7 +696,9 @@ export default function Home() {
         <div className="footerBrand"><Logo size={34} /><span>ORIGIN <b>INCOME</b></span></div>
         <div>© 2026 Origin Income · The AI Operating System for Entrepreneurs</div>
         <div>
-          <a href="mailto:hello@originincome.com">hello@originincome.com</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#faq">FAQ</a>
+          <a href="#contact">Kontakt</a>
           <Link href="/impressum">Impressum</Link>
           <Link href="/datenschutz">Datenschutz</Link>
         </div>
