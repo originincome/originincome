@@ -722,6 +722,7 @@ export default function Home() {
 
             <form className="contactForm" onSubmit={submitContact}>
               <input type="hidden" name="topic" value={contactTopic} />
+              <input className="contactHoneypot" type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
               <div className="contactFormTop">
                 <div><span>Secure message</span><strong>Send us a message</strong></div>
                 <i><b /> Online</i>

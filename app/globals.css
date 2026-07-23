@@ -13,3 +13,5 @@ html{scroll-behavior:smooth}.commandNav{z-index:80}.navActions{display:flex;alig
 @media(max-width:1050px){.contactHeader{grid-template-columns:1fr}.contactHeader>small{grid-column:1}.contactWorkspace{grid-template-columns:1fr}.contactChannels{grid-template-columns:repeat(4,1fr)}.contactChannel{min-height:175px}}
 @media(max-width:760px){.contactSection{padding:38px 22px}.contactChannels{grid-template-columns:1fr 1fr}.contactHeader{row-gap:12px}.contactWorkspace{margin-top:35px}.contactFields{grid-template-columns:1fr}.contactFields label{grid-column:1}.contactFormFooter{align-items:stretch;flex-direction:column}.contactFormFooter button{width:100%}}
 @media(max-width:470px){.contactChannels{grid-template-columns:1fr}.contactChannel{min-height:155px}}
+
+.contactHoneypot{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
