@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient } from "../lib/supabase/client";
 
 function Logo({ size = 44 }: { size?: number }) {
   const id = `origin-v4-${size}`;
@@ -206,6 +208,66 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [contactTopic, setContactTopic] = useState("general");
   const [contactStatus, setContactStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const supabase = useMemo(() => createSupabaseClient(), []);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [loginStatus, setLoginStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [loginMessage, setLoginMessage] = useState("");
+
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      setAuthUser(data.user ?? null);
+      setAuthReady(true);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthUser(session?.user ?? null);
+      setAuthReady(true);
+      if (session?.user) setLoginOpen(false);
+    });
+
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginStatus("loading");
+    setLoginMessage("");
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") ?? "").trim();
+    const password = String(form.get("password") ?? "");
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setLoginStatus("error");
+      setLoginMessage(error.message === "Invalid login credentials"
+        ? "E-Mail-Adresse oder Passwort ist nicht korrekt."
+        : "Der Login ist gerade nicht möglich. Bitte versuche es erneut.");
+      return;
+    }
+
+    setLoginStatus("idle");
+    setAccountOpen(false);
+  };
+
+  const logout = async () => {
+    setAccountOpen(false);
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+  const userName = authUser?.user_metadata?.full_name
+    || authUser?.user_metadata?.first_name
+    || authUser?.email?.split("@")[0]
+    || "Account";
 
   const submitContact = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -234,7 +296,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen || previewItem ? "hidden" : "";
+    document.body.style.overflow = menuOpen || previewItem || loginOpen ? "hidden" : "";
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMenuOpen(false);
@@ -246,7 +308,7 @@ export default function Home() {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [menuOpen, previewItem]);
+  }, [menuOpen, previewItem, loginOpen]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -272,6 +334,28 @@ export default function Home() {
         </Link>
         <div className="navActions">
           <Link className="navBtn desktopLaunch" href="/onboarding">AI Discovery starten</Link>
+          <div className="accountNav">
+            {!authReady ? (
+              <span className="accountLoading" aria-label="Account wird geladen" />
+            ) : authUser ? (
+              <>
+                <button className="accountUser" type="button" onClick={() => setAccountOpen((open) => !open)} aria-expanded={accountOpen}>
+                  <span>{userName}</span><i>⌄</i>
+                </button>
+                <div className={`accountDropdown ${accountOpen ? "open" : ""}`}>
+                  <div className="accountIdentity"><small>ANGEMELDET ALS</small><strong>{authUser.email}</strong></div>
+                  <Link href="/dashboard" onClick={() => setAccountOpen(false)}>Dashboard <i>↗</i></Link>
+                  <Link href="/profil" onClick={() => setAccountOpen(false)}>Mein Profil <i>↗</i></Link>
+                  <Link href="/einstellungen" onClick={() => setAccountOpen(false)}>Einstellungen <i>↗</i></Link>
+                  <button type="button" onClick={logout}>Logout <i>↗</i></button>
+                </div>
+              </>
+            ) : (
+              <button className="accountIcon" type="button" aria-label="Kunden-Login öffnen" onClick={() => setLoginOpen(true)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.2 4.2 0 1 0 0-8.4 4.2 4.2 0 0 0 0 8.4Zm-7.4 8.4c.8-4 3.3-6.1 7.4-6.1s6.6 2.1 7.4 6.1" /></svg>
+              </button>
+            )}
+          </div>
           <button
             className={`menuTrigger ${menuOpen ? "active" : ""}`}
             type="button"
@@ -284,6 +368,28 @@ export default function Home() {
           </button>
         </div>
       </header>
+
+
+      <div className={`loginOverlay ${loginOpen ? "open" : ""}`} aria-hidden={!loginOpen}>
+        <button className="loginBackdrop" aria-label="Login schliessen" onClick={() => setLoginOpen(false)} />
+        <section className="loginCard" role="dialog" aria-modal="true" aria-labelledby="login-title">
+          <button className="loginClose" type="button" onClick={() => setLoginOpen(false)} aria-label="Login schliessen">×</button>
+          <div className="loginBrand"><Logo size={58} /><span>ORIGIN ACCOUNT</span></div>
+          <small className="loginEyebrow">WELCOME BACK</small>
+          <h2 id="login-title">Zurück zu deinem<br /><em>nächsten Schritt.</em></h2>
+          <p>Melde dich an, um dein Dashboard, deinen Fortschritt und Origin AI zu öffnen.</p>
+          <form className="loginForm" onSubmit={submitLogin}>
+            <label><span>E-Mail-Adresse</span><input type="email" name="email" autoComplete="email" placeholder="name@beispiel.ch" required /></label>
+            <label><span>Passwort</span><input type="password" name="password" autoComplete="current-password" placeholder="Dein Passwort" required minLength={6} /></label>
+            <div className="loginOptions"><label><input type="checkbox" name="remember" defaultChecked /><span>Angemeldet bleiben</span></label><Link href="/passwort-vergessen" onClick={() => setLoginOpen(false)}>Passwort vergessen?</Link></div>
+            {loginMessage && <div className="loginError" role="alert">{loginMessage}</div>}
+            <button className="loginSubmit" type="submit" disabled={loginStatus === "loading"}><span>{loginStatus === "loading" ? "Login wird geprüft…" : "Einloggen"}</span><i>↗</i></button>
+          </form>
+          <div className="loginDivider"><span>NEU BEI ORIGIN INCOME?</span></div>
+          <Link className="assessmentLink" href="/onboarding" onClick={() => setLoginOpen(false)}>Starte zuerst dein kostenloses Assessment <i>↗</i></Link>
+          <small className="loginSecurity">Sichere Anmeldung über Supabase Auth · SSL-verschlüsselt</small>
+        </section>
+      </div>
 
       <div className={`commandOverlay ${menuOpen ? "open" : ""}`} aria-hidden={!menuOpen}>
         <button className="commandBackdrop" aria-label="Menü schliessen" onClick={closeMenu} />
