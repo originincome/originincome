@@ -42,8 +42,8 @@ export default function RegisterPage() {
     <div className="authFlowBrand"><Mark/><span>ORIGIN PROFILE REQUIRED</span></div>
     <small className="authFlowEyebrow">STEP 01 · ASSESSMENT</small>
     <h1>Zuerst verstehen wir,<br/><em>wer du bist.</em></h1>
-    <p>Dein Account wird erst nach dem 30-Fragen-Assessment freigeschaltet. So erhältst du kein Standardprodukt, sondern einen Workspace, der zu deinen Zielen passt.</p>
-    <Link className="gateAssessmentButton" href="/onboarding"><span>30 Fragen starten</span><i>→</i></Link>
+    <p>Dein Account wird erst nach dem 20-Fragen-Assessment freigeschaltet. So erhältst du kein Standardprodukt, sondern einen Workspace, der zu deinen Zielen passt.</p>
+    <Link className="gateAssessmentButton" href="/onboarding"><span>20 Fragen starten</span><i>→</i></Link>
     <div className="authFlowNote">Bereits registriert? Nutze das Account-Symbol auf der Startseite.</div>
   </section></main>;
 

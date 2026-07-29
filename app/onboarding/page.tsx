@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { calculateMatches } from "../../lib/matchmaking";
 
 type Answer = string | string[] | number;
 type Question = {
@@ -58,24 +59,6 @@ function Icon({name}:{name:string}){
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{iconPaths[name] || iconPaths.spark}</svg>;
 }
 
-function getMatches(a:Record<number,Answer>){
-  const model=String(a[14]||"");
-  const visible=String(a[13]||"");
-  const speed=String(a[19]||"");
-  let matches=[
-    {name:"KI-gestütztes Service Business",score:94,reason:"Schnell validierbar, hohe Marge und klarer Kundennutzen."},
-    {name:"Digitale Produktmarke",score:90,reason:"Skalierbarer Aufbau mit geringem operativem Aufwand."},
-    {name:"Content & Community Business",score:86,reason:"Langfristiger Markenwert durch Vertrauen und Reichweite."}
-  ];
-  if(model.includes("E-Commerce")) matches=[{name:"Fokussierte E-Commerce Brand",score:95,reason:"Premium-Positionierung mit kontrolliertem Produkttest."},{name:"Nischen-Marktplatz",score:89,reason:"Kuratiertes Sortiment für eine klar definierte Zielgruppe."},{name:"Content Commerce",score:85,reason:"Reichweite und Produktverkauf intelligent kombiniert."}];
-  if(model.includes("Software")) matches=[{name:"KI-gestütztes Micro-SaaS",score:96,reason:"Ein konkretes Problem als wiederkehrende Softwarelösung."},{name:"B2B Automation Service",score:91,reason:"Schneller Umsatz mit späterem SaaS-Potenzial."},{name:"Digitale Expertenplattform",score:86,reason:"Wissen, Tools und Community in einem System."}];
-  if(model.includes("Content")) matches=[{name:"Content & Community Business",score:95,reason:"Vertrauen aufbauen und mehrfach monetarisieren."},{name:"Digitale Creator-Produkte",score:91,reason:"Wissen und Assets ohne Logistik skalieren."},{name:"Affiliate Media Brand",score:84,reason:"Kaufentscheidungen über glaubwürdigen Content begleiten."}];
-  if(model.includes("Premium")) matches=[{name:"Premium-Service Business",score:96,reason:"Direkte Validierung, hoher Kundenwert und starke Marge."},{name:"Productized Service",score:92,reason:"Standardisierte Leistung mit wachsender Skalierbarkeit."},{name:"Digitale Expertenmarke",score:87,reason:"Beratung, Inhalte und Produkte langfristig verbinden."}];
-  if(visible.includes("Lieber nicht")) matches=matches.map((m,i)=>i===2?{...m,name:"Faceless Digital Brand",reason:"Aufbau ohne permanente persönliche Kamera-Präsenz."}:m);
-  if(speed.includes("Langzeitwert")) matches=matches.map((m,i)=>({...m,score:Math.min(98,m.score+(i===0?1:0))}));
-  return matches;
-}
-
 export default function Onboarding(){
   const [stage,setStage]=useState<"intro"|"questions"|"milestone"|"analysis"|"results">("intro");
   const [step,setStep]=useState(0);
@@ -84,7 +67,7 @@ export default function Onboarding(){
   const [analysisLine,setAnalysisLine]=useState(0);
   const q=questions[step];
   const value=answers[step];
-  const matches=useMemo(()=>getMatches(answers),[answers]);
+  const matches=useMemo(()=>calculateMatches(answers),[answers]);
   const progress=Math.round(((step+(stage==="results"?1:0))/questions.length)*100);
   const remaining=Math.max(1,Math.ceil((questions.length-step)*7/60));
   const currentMilestone=milestones[step];
@@ -193,7 +176,7 @@ export default function Onboarding(){
       <div className="paMatchStack">
         {matches.map((m,i)=><article key={m.name} className={i===0?"winner":""}>
           <div className="paRank"><span>0{i+1}</span>{i===0&&<small>BEST MATCH</small>}</div>
-          <div className="paMatchBody"><div className="paBlur"><h2>{m.name}</h2><p>{m.reason}</p></div><div className="paScore"><strong>{m.score}%</strong><span><i style={{width:`${m.score}%`}}/></span></div></div>
+          <div className="paMatchBody"><div className="paBlur"><h2>{m.name}</h2><p>{m.why[0]}</p></div><div className="paScore"><strong>{m.score}%</strong><span><i style={{width:`${m.score}%`}}/></span></div></div>
           <div className="paLock"><Icon name="shield"/></div>
         </article>)}
       </div>

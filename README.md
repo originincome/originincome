@@ -21,3 +21,6 @@ After saving, redeploy the project.
 - Categories: General, Support, Billing, Privacy
 
 The API key is never exposed to the browser. The email is sent server-side through `/api/contact`.
+
+## V8.7
+Origin Intelligence Matchmaking mit sieben Segmenten, Top-3-Ranking, Detailvergleich, Modellauswahl und personalisierter Roadmap-Vorschau.
