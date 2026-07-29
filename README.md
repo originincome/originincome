@@ -24,3 +24,8 @@ The API key is never exposed to the browser. The email is sent server-side throu
 
 ## V8.7
 Origin Intelligence Matchmaking mit sieben Segmenten, Top-3-Ranking, Detailvergleich, Modellauswahl und personalisierter Roadmap-Vorschau.
+
+
+## V8.8
+
+Premium Checkout, Stripe Sandbox-Integration, Preisvergleich, Success-/Cancel-Seiten und vorbereiteter Webhook-Endpunkt.
