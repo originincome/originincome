@@ -59,8 +59,12 @@ export default function Onboarding(){
         <li><span>03</span><div><b>Marke sichtbar machen</b><p>Name, visuelle Richtung, Landingpage und erste Inhalte aufbauen.</p></div></li>
         <li><span>04</span><div><b>Marktvalidierung starten</b><p>Mit Gesprächen, Sign-ups oder Vorverkäufen echte Nachfrage prüfen.</p></div></li>
       </ol></div>
-      <div className="resultActions"><button onClick={()=>{setDone(false);setStep(0)}}>Antworten bearbeiten</button><a href="mailto:hello@originincome.com?subject=Mein Origin Report">Report besprechen ↗</a></div>
-      <p className="disclaimer">V2-Demo: Die Antworten bleiben im laufenden Browserzustand. Benutzerkonto, Datenbank und serverseitige KI-Auswertung folgen als nächste Ausbaustufe.</p>
+      <div className="resultUnlock">
+        <div><small>DEIN VOLLSTÄNDIGES ERGEBNIS IST BEREIT</small><h2>Schalte deine persönliche Analyse frei.</h2><p>Erstelle jetzt deinen kostenlosen Origin Account. Danach warten dein Dashboard, deine Analyse und im nächsten Schritt drei persönliche Business Matches auf dich.</p></div>
+        <Link href="/registrieren" onClick={()=>{localStorage.setItem("origin_assessment_complete","true");localStorage.setItem("origin_assessment_answers",JSON.stringify(answers));localStorage.setItem("origin_assessment_report",JSON.stringify(report));}}>Ergebnisse freischalten <span>→</span></Link>
+      </div>
+      <div className="resultActions"><button onClick={()=>{setDone(false);setStep(0)}}>Antworten bearbeiten</button></div>
+      <p className="disclaimer">Deine Antworten werden bis zur Account-Erstellung lokal in diesem Browser gesichert. Die dauerhafte Synchronisierung mit deinem Origin Account folgt mit dem Matchmaking-Backend.</p>
     </section>}
   </main>
 }

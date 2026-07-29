@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createClient as createSupabaseClient } from "../../lib/supabase/client";
 
 function Mark() {
@@ -13,6 +13,8 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
   const [message, setMessage] = useState("");
+  const [assessmentReady, setAssessmentReady] = useState<boolean | null>(null);
+  useEffect(() => { setAssessmentReady(localStorage.getItem("origin_assessment_complete") === "true"); }, []);
   const checks = { length: password.length >= 8, upper: /[A-ZÄÖÜ]/.test(password), lower: /[a-zäöü]/.test(password), number: /\d/.test(password) };
   const passwordValid = Object.values(checks).every(Boolean);
 
@@ -34,8 +36,19 @@ export default function RegisterPage() {
     if (data.user?.identities?.length === 0) setMessage("Für diese E-Mail-Adresse besteht möglicherweise bereits ein Account. Prüfe dein Postfach oder nutze den Login.");
   };
 
-  return <main className="authFlowPage registerPage"><div className="authFlowGlow"/><section className="authFlowCard registerCard">
+  if (assessmentReady === null) return <main className="authFlowPage"><div className="authFlowLoading">Origin Profile wird geprüft…</div></main>;
+  if (!assessmentReady) return <main className="authFlowPage registerPage"><div className="authFlowGlow"/><section className="authFlowCard registerCard registrationGate">
     <Link className="authBack" href="/">← Zurück zu Origin Income</Link>
+    <div className="authFlowBrand"><Mark/><span>ORIGIN PROFILE REQUIRED</span></div>
+    <small className="authFlowEyebrow">STEP 01 · ASSESSMENT</small>
+    <h1>Zuerst verstehen wir,<br/><em>wer du bist.</em></h1>
+    <p>Dein Account wird erst nach dem 30-Fragen-Assessment freigeschaltet. So erhältst du kein Standardprodukt, sondern einen Workspace, der zu deinen Zielen passt.</p>
+    <Link className="gateAssessmentButton" href="/onboarding"><span>30 Fragen starten</span><i>→</i></Link>
+    <div className="authFlowNote">Bereits registriert? Nutze das Account-Symbol auf der Startseite.</div>
+  </section></main>;
+
+  return <main className="authFlowPage registerPage"><div className="authFlowGlow"/><section className="authFlowCard registerCard">
+    <Link className="authBack" href="/onboarding">← Zurück zu deinen Ergebnissen</Link>
     <div className="authFlowBrand"><Mark/><span>ORIGIN ACCOUNT</span></div>
     <small className="authFlowEyebrow">CREATE YOUR ORIGIN</small>
     <h1>Dein nächster Schritt<br/><em>beginnt hier.</em></h1>
