@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ["card"],
       line_items: [{ price: plan.stripePriceId, quantity: 1 }],
       customer_email: user.email || undefined,
+      customer_creation: "always",
       client_reference_id: user.id,
       allow_promotion_codes: true,
       billing_address_collection: "auto",
