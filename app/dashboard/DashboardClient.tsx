@@ -22,9 +22,9 @@ const Icon = ({ name }: { name: "home"|"profile"|"match"|"modules"|"ai"|"setting
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 };
 
-type Props={firstName:string;fullName:string;initials:string;metadataAnswers?:AssessmentAnswers;metadataMatches?:MatchResult[];metadataSelected?:string|null};
+type Props={firstName:string;fullName:string;initials:string;metadataAnswers?:AssessmentAnswers;metadataMatches?:MatchResult[];metadataSelected?:string|null;initialPlan?:string|null;initialPaymentStatus?:string;initialAccessStatus?:string};
 
-export default function DashboardClient({firstName,fullName,initials,metadataAnswers,metadataMatches,metadataSelected}:Props){
+export default function DashboardClient({firstName,fullName,initials,metadataAnswers,metadataMatches,metadataSelected,initialPlan,initialPaymentStatus="unpaid",initialAccessStatus="locked"}:Props){
   const supabase=useMemo(()=>createClient(),[]);
   const [answers,setAnswers]=useState<AssessmentAnswers>(metadataAnswers||{});
   const [matches,setMatches]=useState<MatchResult[]>(metadataMatches||[]);
@@ -32,6 +32,11 @@ export default function DashboardClient({firstName,fullName,initials,metadataAns
   const [detail,setDetail]=useState<MatchResult|null>(null);
   const [view,setView]=useState<"overview"|"matches">("overview");
   const [saving,setSaving]=useState(false);
+  const [plan,setPlan]=useState<string|null>(initialPlan||null);
+  const [paymentStatus,setPaymentStatus]=useState(initialPaymentStatus);
+  const [accessStatus,setAccessStatus]=useState(initialAccessStatus);
+  const hasPaidAccess=paymentStatus==="paid"&&accessStatus==="active";
+  const planLabel=plan?plan.charAt(0).toUpperCase()+plan.slice(1):null;
 
   useEffect(()=>{
     try{
@@ -46,6 +51,21 @@ export default function DashboardClient({firstName,fullName,initials,metadataAns
       }
     }catch{}
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  useEffect(()=>{
+    let cancelled=false;
+    fetch("/api/stripe/status",{cache:"no-store"})
+      .then(r=>r.ok?r.json():null)
+      .then(payload=>{
+        if(cancelled||!payload?.profile)return;
+        setPlan(payload.profile.chosen_plan||null);
+        setPaymentStatus(payload.profile.payment_status||"unpaid");
+        setAccessStatus(payload.profile.access_status||"locked");
+        if(payload.profile.selected_business_model)setSelected(payload.profile.selected_business_model);
+      })
+      .catch(()=>undefined);
+    return()=>{cancelled=true};
   },[]);
 
   async function choose(model:MatchResult){
@@ -63,8 +83,8 @@ export default function DashboardClient({firstName,fullName,initials,metadataAns
         <button className={view==="overview"?"active":""} onClick={()=>setView("overview")}><Icon name="home"/><span>Übersicht</span></button>
         <Link href="/profil"><Icon name="profile"/><span>Mein Profil</span></Link>
         <button className={view==="matches"?"active":""} onClick={()=>setView("matches")}><Icon name="match"/><span>Meine Matches</span><small>LIVE</small></button>
-        <a className="locked" aria-disabled="true"><Icon name="modules"/><span>Business-Module</span><small>LOCKED</small></a>
-        <a className="locked" aria-disabled="true"><Icon name="ai"/><span>Origin AI</span><small>LOCKED</small></a>
+        <a className="locked" aria-disabled="true"><Icon name="modules"/><span>Business-Module</span><small>{hasPaidAccess?"V10":"LOCKED"}</small></a>
+        <a className="locked" aria-disabled="true"><Icon name="ai"/><span>Origin AI</span><small>{hasPaidAccess?"SOON":"LOCKED"}</small></a>
         <span className="odNavLabel second">ACCOUNT</span><Link href="/einstellungen"><Icon name="settings"/><span>Einstellungen</span></Link>
       </nav>
       <div className="odSidebarFoot"><div className="odMiniUser"><span>{initials}</span><div><b>{fullName}</b><small>Verified Member</small></div></div><button onClick={logout}>Abmelden</button></div>
@@ -72,15 +92,15 @@ export default function DashboardClient({firstName,fullName,initials,metadataAns
     <section className="odMain"><header className="odTopbar"><div><span className="odLiveDot"/> ORIGIN INTELLIGENCE <small>MATCH ENGINE LIVE</small></div><div className="odTopActions"><span className="odAvatar">{initials}</span></div></header>
       <div className="odContent">
       {view==="overview"?<>
-        <section className="odWelcome mmWelcome"><div><small>YOUR BUSINESS ORIGIN</small><h1>{active?<>Deine Richtung steht,<br/><em>{firstName}.</em></>:<>Deine Matches sind bereit,<br/><em>{firstName}.</em></>}</h1><p>{active?`Du hast ${active.name} als dein Hauptmodell gewählt. Als Nächstes schalten wir deine persönliche Roadmap über Stripe frei.`:"Origin Intelligence hat alle sieben Business-Segmente mit deinem Profil verglichen. Öffne deine Resultate und wähle die Journey, die du aufbauen möchtest."}</p></div><div className="odStatusOrb"><div><span>{active?"03":"02"}</span><small>PHASE</small></div><p>{active?"Model selected":"Matches ready"}</p></div></section>
+        <section className="odWelcome mmWelcome"><div><small>YOUR BUSINESS ORIGIN</small><h1>{active?<>Deine Richtung steht,<br/><em>{firstName}.</em></>:<>Deine Matches sind bereit,<br/><em>{firstName}.</em></>}</h1><p>{active?`${hasPaidAccess?`Dein ${planLabel||"Origin"}-Zugang ist aktiv. Deine ${active.name} Journey wird in V10 als vollständiges Modul-System freigeschaltet.`:`Du hast ${active.name} als dein Hauptmodell gewählt. Als Nächstes schalten wir deine persönliche Roadmap über Stripe frei.`}`:"Origin Intelligence hat alle sieben Business-Segmente mit deinem Profil verglichen. Öffne deine Resultate und wähle die Journey, die du aufbauen möchtest."}</p></div><div className="odStatusOrb"><div><span>{hasPaidAccess?"04":active?"03":"02"}</span><small>PHASE</small></div><p>{hasPaidAccess?`${planLabel||"Plan"} active`:active?"Model selected":"Matches ready"}</p></div></section>
         <section className="mmSignalBar"><span><Icon name="check"/> 20 Antworten analysiert</span><span><Icon name="spark"/> 7 Modelle verglichen</span><span><Icon name="match"/> 3 Top-Matches gefunden</span></section>
         {active?<section className="mmChosenHero">
-          <div className="mmChosenSeal"><span>{active.icon}</span><small>{active.accent}</small></div><div className="mmChosenCopy"><small>DEINE GEWÄHLTE BUSINESS JOURNEY</small><h2>{active.name}</h2><p>{active.tagline}</p><div className="mmChosenMeta"><span><Icon name="money"/><b>{active.startBudget}</b><small>Startbudget</small></span><span><Icon name="clock"/><b>{active.firstRevenue}</b><small>Erste Einnahmen</small></span><span><Icon name="scale"/><b>{active.scalability}</b><small>Skalierbarkeit</small></span></div></div><div className="mmChosenAction"><strong>{active.score}%</strong><span>PERSONAL MATCH</span><Link className="mmUnlockButton" href="/checkout">Zugang freischalten <Icon name="arrow"/></Link><small>Stripe Checkout · Testmodus</small></div>
+          <div className="mmChosenSeal"><span>{active.icon}</span><small>{active.accent}</small></div><div className="mmChosenCopy"><small>DEINE GEWÄHLTE BUSINESS JOURNEY</small><h2>{active.name}</h2><p>{active.tagline}</p><div className="mmChosenMeta"><span><Icon name="money"/><b>{active.startBudget}</b><small>Startbudget</small></span><span><Icon name="clock"/><b>{active.firstRevenue}</b><small>Erste Einnahmen</small></span><span><Icon name="scale"/><b>{active.scalability}</b><small>Skalierbarkeit</small></span></div></div><div className="mmChosenAction"><strong>{active.score}%</strong><span>PERSONAL MATCH</span>{hasPaidAccess?<><div className="mmPaidBadge"><Icon name="check"/> {planLabel} aktiv</div><button className="mmUnlockButton" type="button" disabled>Business Journey folgt in V10</button><small>Kein erneuter Kauf erforderlich</small></>:<><Link className="mmUnlockButton" href="/checkout">Zugang freischalten <Icon name="arrow"/></Link><small>Stripe Checkout · Testmodus</small></>}</div>
         </section>:<section className="mmTopMatches"><div className="odSectionTitle"><div><small>AI MATCHMAKING COMPLETE</small><h2>Deine drei stärksten Modelle.</h2></div><button onClick={()=>setView("matches")}>Alle Resultate öffnen <Icon name="arrow"/></button></div><div className="mmCards">{matches.map((m,i)=><MatchCard key={m.id} model={m} rank={i+1} onOpen={()=>setDetail(m)} onChoose={()=>choose(m)} saving={saving}/>)}</div></section>}
         <section className="odGrid mmLowerGrid">
           <article className="odProfileCard"><div className="odCardTop"><span>ORIGIN PROFILE</span><small>COMPLETE</small></div><div className="odScoreRing"><div><strong>100</strong><span>%</span><small>PROFILE</small></div></div><h3>Dein Fundament steht.</h3><p>20 präzise Antworten bilden die Basis für dein persönliches Ranking.</p><div className="odProfileStats"><span><b>20</b> Antworten</span><span><b>7</b> Modelle</span><span><b>3</b> Matches</span></div><Link href="/onboarding">Assessment neu starten <Icon name="arrow"/></Link></article>
-          <article className="mmRoadmapPreview"><div className="odCardTop"><span>YOUR ROADMAP</span><small>{active?"PREVIEW":"LOCKED"}</small></div><h3>{active?active.name:"Wähle zuerst dein Modell"}</h3><p>{active?"Deine sieben Schritte sind vorbereitet. Nach Stripe werden sie als interaktive Journey freigeschaltet.":"Sobald du eines deiner drei Matches auswählst, richtet sich dein Dashboard auf dieses Business aus."}</p><ol>{(active?.modules||["Business-Modell auswählen","Persönliche Roadmap erhalten","Zugang freischalten"]).map((x,i)=><li key={x}><span>{String(i+1).padStart(2,"0")}</span><b>{x}</b><Icon name="lock"/></li>)}</ol></article>
-          <article className="odAiCard"><div className="odAiVisual"><span/><span/><span/><span/><div>OI</div></div><small>ORIGIN INTELLIGENCE</small><h3>Your AI Co-Founder.</h3><p>Origin AI wird später dein gewähltes Modell, deine Assessment-Antworten und deinen Modulfortschritt kennen.</p><span className="odLockedLabel"><Icon name="lock"/> Freischaltung nach Aktivierung</span></article>
+          <article className="mmRoadmapPreview"><div className="odCardTop"><span>YOUR ROADMAP</span><small>{hasPaidAccess?"PAID":active?"PREVIEW":"LOCKED"}</small></div><h3>{active?active.name:"Wähle zuerst dein Modell"}</h3><p>{active?(hasPaidAccess?"Dein Zugang ist bezahlt und dauerhaft gespeichert. Die interaktive 7-Schritte-Journey wird als Nächstes in V10 gebaut.":"Deine sieben Schritte sind vorbereitet. Nach Stripe werden sie als interaktive Journey freigeschaltet."):"Sobald du eines deiner drei Matches auswählst, richtet sich dein Dashboard auf dieses Business aus."}</p><ol>{(active?.modules||["Business-Modell auswählen","Persönliche Roadmap erhalten","Zugang freischalten"]).map((x,i)=><li key={x}><span>{String(i+1).padStart(2,"0")}</span><b>{x}</b><Icon name={hasPaidAccess?"check":"lock"}/></li>)}</ol></article>
+          <article className="odAiCard"><div className="odAiVisual"><span/><span/><span/><span/><div>OI</div></div><small>ORIGIN INTELLIGENCE</small><h3>Your AI Co-Founder.</h3><p>Origin AI wird später dein gewähltes Modell, deine Assessment-Antworten und deinen Modulfortschritt kennen.</p><span className="odLockedLabel"><Icon name={hasPaidAccess?"check":"lock"}/> {hasPaidAccess?"Zugang aktiv · Origin AI folgt später":"Freischaltung nach Aktivierung"}</span></article>
         </section>
       </>:<section className="mmMatchesPage"><div className="mmMatchesHeader"><button onClick={()=>setView("overview")}>← Übersicht</button><small>ORIGIN INTELLIGENCE · FINAL RANKING</small><h1>Deine drei stärksten<br/><em>Business Matches.</em></h1><p>Das Ranking verbindet deine Ressourcen, Ziele, Stärken und Präferenzen. Öffne jedes Modell, vergleiche ehrlich und entscheide dich für deine Journey.</p></div><div className="mmCompareGrid">{matches.map((m,i)=><MatchCard key={m.id} model={m} rank={i+1} onOpen={()=>setDetail(m)} onChoose={()=>choose(m)} saving={saving} selected={selected===m.id}/>)}</div><div className="mmMethod"><Icon name="spark"/><div><small>SO ENTSTEHT DEIN SCORE</small><h3>Regelbasiert. Persönlich. Nachvollziehbar.</h3><p>Deine 20 Antworten werden gegen die Anforderungen aller sieben Modelle gewichtet. Die Prozentwerte werden nicht frei erfunden; sie basieren auf festen Signalen. Später ergänzt Origin AI diese Grundlage mit noch tieferen persönlichen Erklärungen.</p></div></div></section>}
       <footer className="odFooter"><span>ORIGIN INCOME © 2026</span><span>Jeder Erfolg hat einen Ursprung.</span><Link href="/">Zur Website ↗</Link></footer></div>
