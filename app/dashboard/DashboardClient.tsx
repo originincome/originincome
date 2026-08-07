@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { createClient } from "../../lib/supabase/client";
 import { calculateMatches, type AssessmentAnswers, type MatchResult } from "../../lib/matchmaking";
+import { getJourney } from "../../lib/journeys";
+import { loadBusinessDNA, loadVault, type VaultAsset } from "../../lib/vault";
 
 const Icon = ({ name }: { name: "home"|"profile"|"match"|"modules"|"ai"|"settings"|"arrow"|"lock"|"spark"|"check"|"clock"|"money"|"scale"|"close" }) => {
   const paths: Record<string, ReactNode> = {
@@ -93,14 +95,15 @@ export default function DashboardClient({firstName,fullName,initials,metadataAns
     <section className="odMain"><header className="odTopbar"><div><span className="odLiveDot"/> ORIGIN INTELLIGENCE <small>MATCH ENGINE LIVE</small></div><div className="odTopActions"><span className="odAvatar">{initials}</span></div></header>
       <div className="odContent">
       {view==="overview"?<>
-        <section className="odWelcome mmWelcome"><div><small>YOUR BUSINESS ORIGIN</small><h1>{active?<>Deine Richtung steht,<br/><em>{firstName}.</em></>:<>Deine Matches sind bereit,<br/><em>{firstName}.</em></>}</h1><p>{active?`${hasPaidAccess?`Dein ${planLabel||"Origin"}-Zugang ist aktiv. Deine ${active.name} Journey wird in V10 als vollständiges Modul-System freigeschaltet.`:`Du hast ${active.name} als dein Hauptmodell gewählt. Als Nächstes schalten wir deine persönliche Roadmap über Stripe frei.`}`:"Origin Intelligence hat alle sieben Business-Segmente mit deinem Profil verglichen. Öffne deine Resultate und wähle die Journey, die du aufbauen möchtest."}</p></div><div className="odStatusOrb"><div><span>{hasPaidAccess?"04":active?"03":"02"}</span><small>PHASE</small></div><p>{hasPaidAccess?`${planLabel||"Plan"} active`:active?"Model selected":"Matches ready"}</p></div></section>
+        <section className="odWelcome mmWelcome"><div><small>YOUR BUSINESS ORIGIN</small><h1>{active?<>Deine Richtung steht,<br/><em>{firstName}.</em></>:<>Deine Matches sind bereit,<br/><em>{firstName}.</em></>}</h1><p>{active?`${hasPaidAccess?`Dein ${planLabel||"Origin"}-Zugang ist aktiv. Deine ${active.name} Journey ist bereit – fahre dort weiter, wo du zuletzt aufgehört hast.`:`Du hast ${active.name} als dein Hauptmodell gewählt. Als Nächstes schalten wir deine persönliche Roadmap über Stripe frei.`}`:"Origin Intelligence hat alle sieben Business-Segmente mit deinem Profil verglichen. Öffne deine Resultate und wähle die Journey, die du aufbauen möchtest."}</p></div><div className="odStatusOrb"><div><span>{hasPaidAccess?"04":active?"03":"02"}</span><small>PHASE</small></div><p>{hasPaidAccess?`${planLabel||"Plan"} active`:active?"Model selected":"Matches ready"}</p></div></section>
         <section className="mmSignalBar"><span><Icon name="check"/> 20 Antworten analysiert</span><span><Icon name="spark"/> 7 Modelle verglichen</span><span><Icon name="match"/> 3 Top-Matches gefunden</span></section>
         {active?<section className="mmChosenHero">
-          <div className="mmChosenSeal"><span>{active.icon}</span><small>{active.accent}</small></div><div className="mmChosenCopy"><small>DEINE GEWÄHLTE BUSINESS JOURNEY</small><h2>{active.name}</h2><p>{active.tagline}</p><div className="mmChosenMeta"><span><Icon name="money"/><b>{active.startBudget}</b><small>Startbudget</small></span><span><Icon name="clock"/><b>{active.firstRevenue}</b><small>Erste Einnahmen</small></span><span><Icon name="scale"/><b>{active.scalability}</b><small>Skalierbarkeit</small></span></div></div><div className="mmChosenAction"><strong>{active.score}%</strong><span>PERSONAL MATCH</span>{hasPaidAccess?<><div className="mmPaidBadge"><Icon name="check"/> {planLabel} aktiv</div><Link className="mmUnlockButton" href={`/journey/${active.id}`}>Businessmodell starten <Icon name="arrow"/></Link><small>Deine Journey ist freigeschaltet</small></>:<><Link className="mmUnlockButton" href="/checkout">Zugang freischalten <Icon name="arrow"/></Link><small>Stripe Checkout · Testmodus</small></>}</div>
+          <div className="mmChosenSeal"><span>{active.icon}</span><small>{active.accent}</small></div><div className="mmChosenCopy"><small>DEINE GEWÄHLTE BUSINESS JOURNEY</small><h2>{active.name}</h2><p>{active.tagline}</p><div className="mmChosenMeta"><span><Icon name="money"/><b>{active.startBudget}</b><small>Startbudget</small></span><span><Icon name="clock"/><b>{active.firstRevenue}</b><small>Erste Einnahmen</small></span><span><Icon name="scale"/><b>{active.scalability}</b><small>Skalierbarkeit</small></span></div></div><div className="mmChosenAction"><strong>{active.score}%</strong><span>PERSONAL MATCH</span>{hasPaidAccess?<><div className="mmPaidBadge"><Icon name="check"/> {planLabel} aktiv</div><Link className="mmUnlockButton" href={`/journey/${active.id}`}>Journey fortsetzen <Icon name="arrow"/></Link><small>Deine Journey ist freigeschaltet</small></>:<><Link className="mmUnlockButton" href="/checkout">Zugang freischalten <Icon name="arrow"/></Link><small>Stripe Checkout · Testmodus</small></>}</div>
         </section>:<section className="mmTopMatches"><div className="odSectionTitle"><div><small>AI MATCHMAKING COMPLETE</small><h2>Deine drei stärksten Modelle.</h2></div><button onClick={()=>setView("matches")}>Alle Resultate öffnen <Icon name="arrow"/></button></div><div className="mmCards">{matches.map((m,i)=><MatchCard key={m.id} model={m} rank={i+1} onOpen={()=>setDetail(m)} onChoose={()=>choose(m)} saving={saving}/>)}</div></section>}
+        {active&&hasPaidAccess&&<FounderCommandCenter firstName={firstName} plan={planLabel||"Origin"} activeModel={active}/>}
         <section className="odGrid mmLowerGrid">
           <article className="odProfileCard"><div className="odCardTop"><span>ORIGIN PROFILE</span><small>COMPLETE</small></div><div className="odScoreRing"><div><strong>100</strong><span>%</span><small>PROFILE</small></div></div><h3>Dein Fundament steht.</h3><p>20 präzise Antworten bilden die Basis für dein persönliches Ranking.</p><div className="odProfileStats"><span><b>20</b> Antworten</span><span><b>7</b> Modelle</span><span><b>3</b> Matches</span></div><Link href="/onboarding">Assessment neu starten <Icon name="arrow"/></Link></article>
-          <article className="mmRoadmapPreview"><div className="odCardTop"><span>YOUR ROADMAP</span><small>{hasPaidAccess?"PAID":active?"PREVIEW":"LOCKED"}</small></div><h3>{active?active.name:"Wähle zuerst dein Modell"}</h3><p>{active?(hasPaidAccess?"Dein Zugang ist bezahlt und dauerhaft gespeichert. Die interaktive 7-Schritte-Journey wird als Nächstes in V10 gebaut.":"Deine sieben Schritte sind vorbereitet. Nach Stripe werden sie als interaktive Journey freigeschaltet."):"Sobald du eines deiner drei Matches auswählst, richtet sich dein Dashboard auf dieses Business aus."}</p><ol>{(active?.modules||["Business-Modell auswählen","Persönliche Roadmap erhalten","Zugang freischalten"]).map((x,i)=><li key={x}><span>{String(i+1).padStart(2,"0")}</span><b>{x}</b><Icon name={hasPaidAccess?"check":"lock"}/></li>)}</ol></article>
+          <article className="mmRoadmapPreview"><div className="odCardTop"><span>YOUR ROADMAP</span><small>{hasPaidAccess?"PAID":active?"PREVIEW":"LOCKED"}</small></div><h3>{active?active.name:"Wähle zuerst dein Modell"}</h3><p>{active?(hasPaidAccess?"Dein Zugang ist bezahlt und dauerhaft gespeichert. Deine 7-Missionen-Journey ist aktiv und wächst Schritt für Schritt mit deinem Business.":"Deine sieben Schritte sind vorbereitet. Nach Stripe werden sie als interaktive Journey freigeschaltet."):"Sobald du eines deiner drei Matches auswählst, richtet sich dein Dashboard auf dieses Business aus."}</p><ol>{(active?.modules||["Business-Modell auswählen","Persönliche Roadmap erhalten","Zugang freischalten"]).map((x,i)=><li key={x}><span>{String(i+1).padStart(2,"0")}</span><b>{x}</b><Icon name={hasPaidAccess?"check":"lock"}/></li>)}</ol></article>
           <article className="odAiCard"><div className="odAiVisual"><span/><span/><span/><span/><div>OI</div></div><small>ORIGIN INTELLIGENCE</small><h3>Your AI Co-Founder.</h3><p>Origin AI wird später dein gewähltes Modell, deine Assessment-Antworten, Business DNA und deinen Modulfortschritt kennen.</p>{hasPaidAccess?<Link className="dashboardVaultLink" href="/vault">Origin AI Workflows vorbereiten →</Link>:<span className="odLockedLabel"><Icon name="lock"/> Freischaltung nach Aktivierung</span>}</article>
         </section>
       </>:<section className="mmMatchesPage"><div className="mmMatchesHeader"><button onClick={()=>setView("overview")}>← Übersicht</button><small>ORIGIN INTELLIGENCE · FINAL RANKING</small><h1>Deine drei stärksten<br/><em>Business Matches.</em></h1><p>Das Ranking verbindet deine Ressourcen, Ziele, Stärken und Präferenzen. Öffne jedes Modell, vergleiche ehrlich und entscheide dich für deine Journey.</p></div><div className="mmCompareGrid">{matches.map((m,i)=><MatchCard key={m.id} model={m} rank={i+1} onOpen={()=>setDetail(m)} onChoose={()=>choose(m)} saving={saving} selected={selected===m.id}/>)}</div><div className="mmMethod"><Icon name="spark"/><div><small>SO ENTSTEHT DEIN SCORE</small><h3>Regelbasiert. Persönlich. Nachvollziehbar.</h3><p>Deine 20 Antworten werden gegen die Anforderungen aller sieben Modelle gewichtet. Die Prozentwerte werden nicht frei erfunden; sie basieren auf festen Signalen. Später ergänzt Origin AI diese Grundlage mit noch tieferen persönlichen Erklärungen.</p></div></div></section>}
@@ -108,6 +111,126 @@ export default function DashboardClient({firstName,fullName,initials,metadataAns
     </section>
     {detail&&<MatchModal model={detail} selected={selected===detail.id} saving={saving} onClose={()=>setDetail(null)} onChoose={()=>choose(detail)}/>} 
   </main>;
+}
+
+type CommandSnapshot = {
+  activeMission:number;
+  completedTasks:number;
+  totalTasks:number;
+  missionCompleted:number;
+  missionTotal:number;
+  businessScore:number;
+  nextTask:string;
+  nextTaskIndex:number;
+  missionTitle:string;
+  vaultCount:number;
+  recentAssets:VaultAsset[];
+  dnaComplete:number;
+};
+
+function FounderCommandCenter({firstName,plan,activeModel}:{firstName:string;plan:string;activeModel:MatchResult}){
+  const [snapshot,setSnapshot]=useState<CommandSnapshot>({
+    activeMission:1,completedTasks:0,totalTasks:0,missionCompleted:0,missionTotal:0,businessScore:0,
+    nextTask:"Journey starten",nextTaskIndex:0,missionTitle:activeModel.modules?.[0]||"Mission 1",vaultCount:0,recentAssets:[],dnaComplete:0
+  });
+
+  useEffect(()=>{
+    function refresh(){
+      try{
+        const journey=getJourney(activeModel.id);
+        const vault=loadVault().filter(x=>x.journey===activeModel.id);
+        const dna=loadBusinessDNA();
+        if(!journey){
+          setSnapshot(s=>({...s,vaultCount:vault.length,recentAssets:vault.slice(0,3)}));
+          return;
+        }
+        const raw=JSON.parse(localStorage.getItem(journey.storageKey)||"{}");
+        const done:Record<string,boolean>=raw.done||{};
+        const activeMission=Math.min(7,Math.max(1,Number(raw.active)||1));
+        const totalTasks=journey.phases.reduce((sum,p)=>sum+p.tasks.length,0);
+        const completedTasks=Object.entries(done).filter(([,v])=>Boolean(v)).length;
+        const phase=journey.phases[activeMission-1];
+        const missionCompleted=phase.tasks.filter((_,i)=>done[`${activeMission}-${i}`]).length;
+        const missionTotal=phase.tasks.length;
+        let nextIndex=phase.tasks.findIndex((_,i)=>!done[`${activeMission}-${i}`]);
+        let nextTask=nextIndex>=0?phase.tasks[nextIndex]:(activeMission<7?`Mission ${activeMission+1} starten`:"Journey abgeschlossen – nächstes Wachstumsziel definieren");
+        if(nextIndex<0)nextIndex=missionTotal;
+        const progressPct=totalTasks?Math.round((completedTasks/totalTasks)*100):0;
+        const businessScore=Math.min(100,Math.round(progressPct*.82+((activeMission-1)/6)*18));
+        const dnaFields=[dna.niche,dna.targetGroup,dna.coreProblem,dna.outcome,dna.positioning,dna.language,dna.tone];
+        const dnaComplete=Math.round((dnaFields.filter(Boolean).length/dnaFields.length)*100);
+        setSnapshot({
+          activeMission,completedTasks,totalTasks,missionCompleted,missionTotal,businessScore,nextTask,nextTaskIndex:nextIndex,
+          missionTitle:phase.title,vaultCount:vault.length,recentAssets:vault.slice(0,3),dnaComplete
+        });
+      }catch{}
+    }
+    refresh();
+    window.addEventListener("focus",refresh);
+    window.addEventListener("storage",refresh);
+    return()=>{window.removeEventListener("focus",refresh);window.removeEventListener("storage",refresh)};
+  },[activeModel.id]);
+
+  const missionPct=snapshot.missionTotal?Math.round((snapshot.missionCompleted/snapshot.missionTotal)*100):0;
+  const journeyPct=snapshot.totalTasks?Math.round((snapshot.completedTasks/snapshot.totalTasks)*100):0;
+  const timeline=[
+    {label:"Fundament",at:1},
+    {label:"Angebot",at:2},
+    {label:"Markt",at:4},
+    {label:"Erster Kunde",at:6},
+    {label:"Skalierung",at:7}
+  ];
+  const aiSuggestions=snapshot.activeMission<=2
+    ?["Nische analysieren","Positionierung schärfen","Angebot vorbereiten"]
+    :snapshot.activeMission<=4
+      ?["Angebot prüfen","Kundennutzen formulieren","Kampagne vorbereiten"]
+      :["Outreach optimieren","Sales-Skript vorbereiten","Nächsten Hebel analysieren"];
+
+  return <section className="fccShell">
+    <div className="fccTitleRow"><div><small>FOUNDER COMMAND CENTER</small><h2>Dein nächster Schritt ist glasklar.</h2><p>Origin Income hält Journey, Business Assets und deine nächsten Aktionen an einem Ort – damit du nicht konsumierst, sondern umsetzt.</p></div><div className="fccPlan"><small>DEIN PLAN</small><strong>{plan}</strong><span>Aktiver Zugang ✓</span><em>Upgrade-System folgt in Access Control</em></div></div>
+
+    <div className="fccGrid">
+      <article className="fccPrimary">
+        <div className="fccCardTop"><span>JETZT WEITERMACHEN</span><small>MISSION {String(snapshot.activeMission).padStart(2,"0")} / 07</small></div>
+        <div className="fccMissionNo">{String(snapshot.activeMission).padStart(2,"0")}</div>
+        <h3>{snapshot.missionTitle}</h3>
+        <p className="fccNextLabel">DEINE NÄCHSTE AUFGABE</p>
+        <div className="fccNextTask"><span>{snapshot.nextTaskIndex<snapshot.missionTotal?String(snapshot.nextTaskIndex+1).padStart(2,"0"):"✓"}</span><b>{snapshot.nextTask}</b></div>
+        <div className="fccProgressRow"><div><span>Mission</span><b>{missionPct}%</b><i><em style={{width:`${missionPct}%`}}/></i></div><div><span>Journey</span><b>{journeyPct}%</b><i><em style={{width:`${journeyPct}%`}}/></i></div></div>
+        <Link className="fccMainCta" href={`/journey/${activeModel.id}`}>Mission fortsetzen <Icon name="arrow"/></Link>
+      </article>
+
+      <article className="fccScore">
+        <div className="fccCardTop"><span>BUSINESS SCORE</span><small>LIVE</small></div>
+        <div className="fccScoreRing" style={{"--score":`${snapshot.businessScore*3.6}deg`} as React.CSSProperties}><div><strong>{snapshot.businessScore}</strong><span>/100</span></div></div>
+        <h3>{snapshot.businessScore<35?"Dein Fundament entsteht.":snapshot.businessScore<70?"Dein Business nimmt Form an.":"Du näherst dich einem marktfähigen System."}</h3>
+        <p>{snapshot.completedTasks} von {snapshot.totalTasks} konkreten Aufgaben umgesetzt.</p>
+      </article>
+
+      <article className="fccVault">
+        <div className="fccCardTop"><span>BUSINESS VAULT</span><small>{snapshot.vaultCount} ASSETS</small></div>
+        <h3>Dein Unternehmen bekommt Substanz.</h3>
+        <p>Missionen erzeugen Entscheidungen. Der Vault sammelt die Business-Bausteine, die daraus entstehen.</p>
+        <div className="fccAssetList">{snapshot.recentAssets.length?snapshot.recentAssets.map(a=><span key={a.id}><i>{a.category==="Origin AI"?"✦":"⌁"}</i><div><b>{a.title}</b><small>{a.status==="prepared"?"Zur Erstellung bereit":a.status==="draft"?"AI Workflow vorbereitet":"Gespeichert"}</small></div></span>):<span className="empty"><i>⌁</i><div><b>Noch keine Assets</b><small>Schliesse Mission 1 ab, um deinen Vault zu starten.</small></div></span>}</div>
+        <Link href="/vault">Business Vault öffnen <Icon name="arrow"/></Link>
+      </article>
+
+      <article className="fccAi">
+        <div className="fccCardTop"><span>ORIGIN AI</span><small>PREPARED</small></div>
+        <div className="fccAiOrb">OI<span/></div>
+        <h3>Dein Co-Founder kennt bereits deinen Kontext.</h3>
+        <p>Business DNA: <b>{snapshot.dnaComplete}%</b> vorbereitet. Mit jeder Mission wird der Kontext präziser.</p>
+        <div className="fccAiActions">{aiSuggestions.map(x=><span key={x}>✦ {x}</span>)}</div>
+        <Link href="/vault">AI Workflows vorbereiten →</Link>
+      </article>
+    </div>
+
+    <article className="fccTimeline">
+      <div className="fccTimelineHead"><div><small>BUSINESS TIMELINE</small><h3>Vom Fundament zum laufenden Business.</h3></div><span>📍 Mission {snapshot.activeMission}</span></div>
+      <div className="fccTrack">{timeline.map((item,i)=><div key={item.label} className={snapshot.activeMission>item.at?"done":snapshot.activeMission===item.at?"current":""}><i>{snapshot.activeMission>item.at?"✓":i+1}</i><b>{item.label}</b>{i<timeline.length-1&&<em/>}</div>)}</div>
+      <p>Dein Fokus bleibt bewusst auf dem nächsten umsetzbaren Schritt. Umsätze sind nicht garantiert – aber jedes abgeschlossene Element bringt dein Angebot näher an echte Marktreife.</p>
+    </article>
+  </section>;
 }
 
 function MatchCard({model,rank,onOpen,onChoose,saving,selected=false}:{model:MatchResult;rank:number;onOpen:()=>void;onChoose:()=>void;saving:boolean;selected?:boolean}){
