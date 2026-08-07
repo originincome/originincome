@@ -1,6 +1,6 @@
 {
-  "name": "originincome-v10-1",
-  "version": "10.1.0",
+  "name": "originincome-v10-2",
+  "version": "10.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

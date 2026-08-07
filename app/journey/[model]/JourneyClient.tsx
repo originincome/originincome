@@ -1,13 +1,42 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { JourneyDefinition } from "../../../lib/journeys";
+
+type VaultItem = { id:string; title:string; type:string; status:"ready"|"planned"; phase:number };
+
+const missionMeta: Record<string, Array<{duration:string;difficulty:string;milestone:string;incomeFocus:string;vault:string[]}>> = {
+  "ai-automation-agency": [
+    {duration:"45–60 Min.",difficulty:"Fokus",milestone:"Positionierung steht",incomeFocus:"Ein Angebot definieren, das ein reales Kosten- oder Umsatzproblem löst.",vault:["Positionierungs-Canvas","Kernangebot-Briefing"]},
+    {duration:"50–70 Min.",difficulty:"Mittel",milestone:"Angebot verkaufsbereit",incomeFocus:"Ein Paket bauen, dessen Nutzen sich in Geld, Zeit oder Risiko übersetzen lässt.",vault:["ICP-Profil","Angebots-Blueprint","Preislogik"]},
+    {duration:"60–90 Min.",difficulty:"Hands-on",milestone:"Erste Automation live",incomeFocus:"Eine Demo bauen, die später als Proof im Verkauf eingesetzt werden kann.",vault:["Automation-Spezifikation","Demo-Workflow"]},
+    {duration:"45–75 Min.",difficulty:"Kreativ",milestone:"Proof vorhanden",incomeFocus:"Interessenten zeigen, was du konkret verbesserst – statt KI nur zu erklären.",vault:["Case-Study-Struktur","Demo-Skript"]},
+    {duration:"60 Min.",difficulty:"Execution",milestone:"Pipeline gestartet",incomeFocus:"Erste relevante Gespräche erzeugen und dein Angebot am Markt validieren.",vault:["Lead-Kriterien","Outreach-Sequenz","Follow-up-Plan"]},
+    {duration:"60–90 Min.",difficulty:"Sales",milestone:"Verkaufsprozess steht",incomeFocus:"Aus Interesse einen bezahlten Pilot oder ein Projekt machen.",vault:["Discovery-Guide","Angebotsstruktur","Delivery-Checkliste"]},
+    {duration:"45–60 Min.",difficulty:"Strategisch",milestone:"Skalierung vorbereitet",incomeFocus:"Einmalige Projekte in planbarere wiederkehrende Einnahmen überführen.",vault:["Retainer-Blueprint","SOP-Liste","90-Tage-Plan"]},
+  ],
+  "lead-generation-agency": [
+    {duration:"45–60 Min.",difficulty:"Fokus",milestone:"Nische definiert",incomeFocus:"Einen Markt wählen, in dem neue Kunden einen klaren wirtschaftlichen Wert haben.",vault:["Nischen-Scorecard","Positionierungs-Canvas"]},
+    {duration:"45–70 Min.",difficulty:"Mittel",milestone:"Angebot steht",incomeFocus:"Ein Angebot formulieren, das Termine und qualifizierte Chancen verkauft – nicht Datensätze.",vault:["Lead-Definition","Angebots-Blueprint","Preislogik"]},
+    {duration:"60–90 Min.",difficulty:"Hands-on",milestone:"Lead-System aufgebaut",incomeFocus:"Eine belastbare Datenbasis schaffen, mit der Outreach überhaupt profitabel getestet werden kann.",vault:["ICP-Filter","Lead-Qualitätscheck","Datenquellen-Plan"]},
+    {duration:"60–90 Min.",difficulty:"Execution",milestone:"Kampagne live",incomeFocus:"Aus Daten echte Gespräche erzeugen – personalisiert, messbar und wiederholbar.",vault:["E-Mail-Sequenz","LinkedIn-Sequenz","Follow-up-Plan"]},
+    {duration:"45–60 Min.",difficulty:"Sales",milestone:"Terminsystem steht",incomeFocus:"Positive Antworten konsequent in qualifizierte Calls umwandeln.",vault:["Qualifizierungsleitfaden","Antwortbibliothek","No-Show-Flow"]},
+    {duration:"60 Min.",difficulty:"Delivery",milestone:"Kundenprozess steht",incomeFocus:"Resultate nachvollziehbar liefern, damit Kunden bleiben und verlängern.",vault:["Onboarding-Checkliste","KPI-Report","Handover-Prozess"]},
+    {duration:"45–60 Min.",difficulty:"Strategisch",milestone:"Retainer vorbereitet",incomeFocus:"Aus Kampagnen einen planbaren Agenturumsatz mit klaren SOPs entwickeln.",vault:["Retainer-Blueprint","QA-Checkliste","90-Tage-Plan"]},
+  ]
+};
+
+function metaFor(journey:JourneyDefinition, phase:number){
+  return missionMeta[journey.slug]?.[phase-1] || {duration:"45–60 Min.",difficulty:"Fokus",milestone:"Business-Baustein fertig",incomeFocus:"Diese Mission bringt dich einen konkreten Schritt näher an ein marktfähiges Angebot.",vault:["Mission-Briefing","Ergebnis-Canvas"]};
+}
 
 export default function JourneyClient({ firstName, plan, journey }: { firstName: string; plan: string; journey: JourneyDefinition }) {
   const phases = journey.phases;
   const key = journey.storageKey;
   const [active, setActive] = useState(1);
   const [done, setDone] = useState<Record<string, boolean>>({});
+  const [vaultOpen,setVaultOpen]=useState(false);
+  const [celebrate,setCelebrate]=useState<number|null>(null);
 
   useEffect(() => {
     try {
@@ -20,52 +49,68 @@ export default function JourneyClient({ firstName, plan, journey }: { firstName:
   const completed = Object.values(done).filter(Boolean).length;
   const total = phases.reduce((a, p) => a + p.tasks.length, 0);
   const pct = total ? Math.round((completed / total) * 100) : 0;
+  const businessScore = Math.min(100, Math.round(pct * .82 + ((active-1)/6)*18));
   const phase = phases[active - 1];
+  const meta = metaFor(journey,active);
   const phaseDone = phase.tasks.every((_, i) => done[`${active}-${i}`]);
   const openCount = phase.tasks.length - phase.tasks.filter((_, i) => done[`${active}-${i}`]).length;
+
+  const vaultItems = useMemo<VaultItem[]>(()=>phases.flatMap(p=>{
+    const m=metaFor(journey,p.n);
+    const ready=p.tasks.every((_,i)=>done[`${p.n}-${i}`]);
+    return m.vault.map((title,i)=>({id:`${p.n}-${i}`,title,type:i===0?"Canvas":"Blueprint",status:ready?"ready":"planned",phase:p.n}));
+  }),[done,journey,phases]);
+  const readyVault=vaultItems.filter(x=>x.status==="ready").length;
 
   function persist(nextDone: Record<string, boolean>, nextActive: number) {
     localStorage.setItem(key, JSON.stringify({ done: nextDone, active: nextActive }));
   }
-
   function toggle(i: number) {
-    const next = { ...done, [`${active}-${i}`]: !done[`${active}-${i}`] };
-    setDone(next);
-    persist(next, active);
+    const id=`${active}-${i}`;
+    const next = { ...done, [id]: !done[id] };
+    setDone(next); persist(next, active);
+    const willDone=phase.tasks.every((_,idx)=>next[`${active}-${idx}`]);
+    if(willDone && !phaseDone){setCelebrate(active);window.setTimeout(()=>setCelebrate(null),2800)}
   }
+  function open(n: number) { setActive(n); persist(done,n); window.scrollTo({top:0,behavior:"smooth"}); }
 
-  function open(n: number) {
-    setActive(n);
-    persist(done, n);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  return <main className="journeyShell premiumJourney">
+    <aside className="journeySide">
+      <Link href="/dashboard" className="journeyLogo"><span>O</span> ORIGIN <b>INCOME</b></Link>
+      <div className="journeySideLabel">BUSINESS OPERATING SYSTEM</div>
+      <h2>{journey.shortTitle.split("\n").map((line,i)=><span key={line}>{line}{i===0&&<br/>}</span>)}</h2>
+      <div className="businessScoreCard"><div><small>BUSINESS SCORE</small><strong>{businessScore}</strong><span>/100</span></div><i><em style={{width:`${businessScore}%`}}/></i><p>{businessScore<35?"Fundament entsteht":businessScore<70?"Business nimmt Form an":"Go-to-market wird konkret"}</p></div>
+      <div className="journeyProgress"><div><span>Mission Progress</span><b>{pct}%</b></div><i><em style={{width:`${pct}%`}}/></i><small>{completed} von {total} Aufgaben umgesetzt</small></div>
+      <button className="vaultNav" onClick={()=>setVaultOpen(true)}><span>⌁</span><div><small>BUSINESS VAULT</small><b>Deine Business Assets</b></div><em>{readyVault}/{vaultItems.length}</em></button>
+      <nav>{phases.map(p=>{const count=p.tasks.filter((_,i)=>done[`${p.n}-${i}`]).length;const complete=count===p.tasks.length;return <button key={p.n} className={active===p.n?"active":complete?"complete":""} onClick={()=>open(p.n)}><span>{complete?"✓":String(p.n).padStart(2,"0")}</span><div><small>MISSION {p.n}</small><b>{p.title}</b></div><em>{count}/{p.tasks.length}</em></button>})}</nav>
+      <Link href="/dashboard" className="journeyBack">← Zurück zum Dashboard</Link>
+    </aside>
 
-  return (
-    <main className="journeyShell">
-      <aside className="journeySide">
-        <Link href="/dashboard" className="journeyLogo"><span>O</span> ORIGIN <b>INCOME</b></Link>
-        <div className="journeySideLabel">BUSINESS JOURNEY</div>
-        <h2>{journey.shortTitle.split("\n").map((line, i) => <span key={line}>{line}{i === 0 && <br/>}</span>)}</h2>
-        <div className="journeyProgress"><div><span>Gesamtfortschritt</span><b>{pct}%</b></div><i><em style={{width:`${pct}%`}}/></i><small>{completed} von {total} Aufgaben abgeschlossen</small></div>
-        <nav>{phases.map(p => { const count = p.tasks.filter((_, i) => done[`${p.n}-${i}`]).length; return <button key={p.n} className={active === p.n ? "active" : ""} onClick={() => open(p.n)}><span>{String(p.n).padStart(2,"0")}</span><div><small>{p.eyebrow}</small><b>{p.title}</b></div><em>{count}/{p.tasks.length}</em></button>; })}</nav>
-        <Link href="/dashboard" className="journeyBack">← Zurück zum Dashboard</Link>
-      </aside>
+    <section className="journeyMain">
+      <header><div><span className="journeyLive"/> BUSINESS BUILD ACTIVE · {plan.toUpperCase()}</div><span>{firstName} · Mission {active} / 7</span></header>
+      <div className="journeyContent">
+        <section className="businessTimeline"><small>DEIN WEG ZUM ERSTEN FUNKTIONIERENDEN BUSINESS</small><div><span className="done">Start</span><i/><span className={active>=3?"done":"active"}>Angebot</span><i/><span className={active>=5?"done":""}>Markt</span><i/><span className={active>=6?"done":""}>Erster Kunde</span><i/><span className={active>=7?"done":""}>Skalierung</span></div><p>📍 Du bist hier: <b>Mission {active} · {phase.title}</b></p></section>
 
-      <section className="journeyMain">
-        <header><div><span className="journeyLive"/> JOURNEY ACTIVE · {plan.toUpperCase()}</div><span>{firstName} · Phase {active} / 7</span></header>
-        <div className="journeyContent">
-          <div className="journeyHero"><div><small>PHASE {String(active).padStart(2,"0")} · {phase.eyebrow}</small><h1>{phase.title}</h1><p>{phase.promise}</p></div><div className="journeyScore"><strong>{phase.tasks.filter((_,i)=>done[`${active}-${i}`]).length}/{phase.tasks.length}</strong><span>AUFGABEN</span></div></div>
+        <div className="journeyHero missionHero"><div><small>MISSION {String(active).padStart(2,"0")} · {phase.eyebrow}</small><h1>{phase.title}</h1><p>{phase.promise}</p><div className="missionMeta"><span>◷ {meta.duration}</span><span>◇ {meta.difficulty}</span><span>🏆 {meta.milestone}</span></div></div><div className="journeyScore"><strong>{phase.tasks.filter((_,i)=>done[`${active}-${i}`]).length}/{phase.tasks.length}</strong><span>MISSION TASKS</span></div></div>
 
-          <div className="journeyGrid">
-            <article className="journeyCard"><div className="journeyCardHead"><span>01</span><div><small>WISSEN</small><h3>Was du in dieser Phase lernst</h3></div></div><div className="lessonList">{phase.lessons.map((x,i)=><div key={x}><span>{String(i+1).padStart(2,"0")}</span><p>{x}</p><b>→</b></div>)}</div></article>
-            <article className="journeyCard taskCard"><div className="journeyCardHead"><span>02</span><div><small>EXECUTION</small><h3>Deine Aufgaben</h3></div></div><p className="taskIntro">Nicht nur lesen. Umsetzen. Hake jede Aufgabe erst ab, wenn sie wirklich erledigt ist.</p><div className="journeyTasks">{phase.tasks.map((x,i)=><button key={x} className={done[`${active}-${i}`]?"done":""} onClick={()=>toggle(i)}><i>{done[`${active}-${i}`]?"✓":""}</i><span><small>AUFGABE {i+1}</small>{x}</span></button>)}</div></article>
-          </div>
+        <article className="incomeFocus"><div><small>BUSINESS OUTCOME</small><h3>Was diese Mission für dein Einkommenspotenzial verändert</h3><p>{meta.incomeFocus}</p></div><span>CHF</span></article>
 
-          <div className="journeyBottom"><article><small>DEIN ERGEBNIS</small><h3>{phase.deliverable}</h3><p>Am Ende dieser Phase besitzt du ein konkretes Asset für den nächsten Schritt – nicht nur Theorie.</p></article><article><small>EMPFOHLENER STACK</small><div className="toolPills">{phase.tools.map(t=><span key={t}>{t}</span>)}</div><p>Origin AI wird später direkt in dieser Journey neben deinen Aufgaben verfügbar sein.</p></article></div>
-
-          <div className="journeyNext"><div>{phaseDone?<><span>✓ PHASE BEREIT</span><b>Alle Aufgaben dieser Phase sind erledigt.</b></>:<><span>DEIN NÄCHSTER SCHRITT</span><b>Schliesse die {openCount} offenen Aufgaben ab.</b></>}</div>{active<7?<button disabled={!phaseDone} onClick={()=>open(active+1)}>Phase {active+1} starten →</button>:<button disabled={!phaseDone}>Journey abschliessen ✓</button>}</div>
+        <div className="journeyGrid">
+          <article className="journeyCard"><div className="journeyCardHead"><span>01</span><div><small>STRATEGY</small><h3>Was du dafür verstehen musst</h3></div></div><div className="lessonList">{phase.lessons.map((x,i)=><div key={x}><span>{String(i+1).padStart(2,"0")}</span><p>{x}</p><b>→</b></div>)}</div></article>
+          <article className="journeyCard taskCard"><div className="journeyCardHead"><span>02</span><div><small>EXECUTION</small><h3>Deine Mission</h3></div></div><p className="taskIntro">Nicht konsumieren. Umsetzen. Jede erledigte Aufgabe baut einen konkreten Bestandteil deines Business.</p><div className="journeyTasks">{phase.tasks.map((x,i)=><button key={x} className={done[`${active}-${i}`]?"done":""} onClick={()=>toggle(i)}><i>{done[`${active}-${i}`]?"✓":""}</i><span><small>MISSION TASK {i+1}</small>{x}</span></button>)}</div></article>
         </div>
-      </section>
-    </main>
-  );
+
+        <div className="journeyBottom premiumBottom">
+          <article><small>MISSION DELIVERABLE</small><h3>{phase.deliverable}</h3><p>Am Ende besitzt du einen echten Business-Baustein. Kein theoretisches Zertifikat, sondern etwas, das du für deinen Markt einsetzen kannst.</p><div className="deliverableReward">🏆 <span><small>BELOHNUNG</small><b>{meta.milestone}</b></span></div></article>
+          <article><small>BUSINESS VAULT</small><h3>Diese Assets werden vorbereitet.</h3><div className="vaultPreview">{meta.vault.map(x=><span key={x}><i>{phaseDone?"✓":"⌁"}</i><b>{x}</b><small>{phaseDone?"bereit":"mit Origin AI erstellbar"}</small></span>)}</div><button className="vaultButton" onClick={()=>setVaultOpen(true)}>Business Vault öffnen →</button></article>
+          <article className="originAiPrep"><small>ORIGIN AI · CO-FOUNDER</small><h3>Deine KI arbeitet später direkt mit dieser Mission.</h3><p>Origin AI kennt dann dein Assessment, deine Journey und deinen Fortschritt. Statt tausender statischer Vorlagen erzeugst du genau das Dokument oder die Nachricht, die du gerade brauchst.</p><div className="aiActionList"><span>„Erstelle mein Angebot“</span><span>„Baue meine Preisliste“</span><span>„Schreibe meine Outreach-Sequenz“</span></div><button disabled>Origin AI folgt in einem späteren Release</button></article>
+        </div>
+
+        <div className="journeyNext"><div>{phaseDone?<><span>MISSION COMPLETE</span><b>{meta.milestone}. Dein nächster Business-Baustein ist bereit.</b></>:<><span>DEIN NÄCHSTER SCHRITT</span><b>Schliesse die {openCount} offenen Aufgaben ab.</b></>}</div>{active<7?<button disabled={!phaseDone} onClick={()=>open(active+1)}>Mission {active+1} starten →</button>:<button disabled={!phaseDone}>Journey abschliessen ✓</button>}</div>
+      </div>
+    </section>
+
+    {vaultOpen&&<div className="vaultBackdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setVaultOpen(false)}}><section className="vaultModal"><button className="vaultClose" onClick={()=>setVaultOpen(false)}>×</button><small>ORIGIN BUSINESS VAULT</small><h2>Dein Unternehmen entsteht hier.</h2><p>Der Vault sammelt die Business Assets, die du während deiner Journey entwickelst. Origin AI wird diese später individuell aus deinen Daten generieren – statt dir generische Vorlagen vorzusetzen.</p><div className="vaultStats"><span><b>{readyVault}</b><small>bereit</small></span><span><b>{vaultItems.length-readyVault}</b><small>vorbereitet</small></span><span><b>7</b><small>Missionen</small></span></div><div className="vaultList">{vaultItems.map(x=><article key={x.id} className={x.status}><i>{x.status==="ready"?"✓":"⌁"}</i><div><small>MISSION {x.phase} · {x.type.toUpperCase()}</small><b>{x.title}</b></div><span>{x.status==="ready"?"Bereit":"Später mit Origin AI erstellen"}</span></article>)}</div></section></div>}
+    {celebrate&&<div className="missionCelebration"><span>✓</span><small>MISSION {celebrate} ABGESCHLOSSEN</small><h2>{metaFor(journey,celebrate).milestone}</h2><p>Dein Business ist einen echten Schritt weiter.</p></div>}
+  </main>;
 }
