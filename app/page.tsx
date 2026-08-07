@@ -188,17 +188,19 @@ const workspaceItems = [
   ["AGB", "Individueller, bearbeitbarer Dokumententwurf"],
   ["Datenschutz", "Passender Entwurf für Website und Geschäftsmodell"],
   ["Impressum", "Strukturierter Entwurf anhand deiner Firmendaten"],
-  ["Offerten", "Professionelle Angebote im eigenen Branding"],
-  ["Verträge", "Anpassbare Vertragsentwürfe für typische Geschäftsprozesse"],
-  ["Rechnungen", "Gebrandete Rechnungen mit Positionen und Berechnungen"],
 ];
 
 const faqItems = [
   ["Was ist Origin AI?", "Origin AI ist dein digitaler Co-Founder. Die Plattform verbindet persönliche Analyse, Geschäftsstrategie, Branding, Dokumente und tägliche Umsetzung in einem durchgängigen System."],
   ["Sind die Ergebnisse individuell?", "Ja. Empfehlungen und Inhalte basieren auf deinen Antworten, Zielen, Fähigkeiten, Ressourcen und deinem tatsächlichen Fortschritt."],
   ["Kann Origin AI rechtliche Dokumente erstellen?", "Origin AI kann individualisierte und bearbeitbare Entwürfe erstellen. Rechtlich relevante Dokumente sollten vor dem Einsatz durch eine qualifizierte Fachperson geprüft werden."],
-  ["Wann wird der AI Workspace verfügbar?", "Die erste öffentliche Version ist für den Launch am 15. August 2026 vorgesehen. Einzelne Module können schrittweise freigeschaltet werden."],
-  ["Was kostet Origin Income?", "Zum Start wird es einen kostenlosen Einstieg und kostenpflichtige Pläne für umfassendere AI- und Workspace-Funktionen geben. Die finalen Preise werden vor dem Launch veröffentlicht."],
+  ["Wann wird der AI Workspace verfügbar?", "Die erste öffentliche Version ist für den Launch am 15. August 2026 vorgesehen. Einzelne Bereiche können schrittweise freigeschaltet werden."],
+  ["Was kostet Origin Income?", "Origin Income startet mit drei einmaligen Paketen: Starter für CHF 89, Pro für CHF 109 und Elite für CHF 129. Pro ist als beliebteste Option positioniert; die Leistungen der Pakete unterscheiden sich je nach Zugriff und Funktionen."],
+  ["Wieso Origin Income?", "Weil Origin Income keinen schnellen Reichtum verspricht. Wir wollen einen ehrlichen, strukturierten Weg bieten, um mit klaren Schritten, echten Business-Aufgaben und KI-Unterstützung ein digitales Einkommen aufzubauen. Entscheidend bleibt immer die eigene Umsetzung."],
+  ["Wo ist der Hauptsitz von Origin Income?", "Origin Income ist ein Schweizer Projekt mit Standort in Zürich, Schweiz."],
+  ["Wer hat Origin Income gegründet?", "Origin Income wurde von Roger Streit gegründet. Er ist Founder & CEO und verantwortet Vision, Produkt und Weiterentwicklung der Plattform."],
+  ["Warum wurde Origin Income gegründet?", "Origin Income wurde als Projekt mit dem Ziel gegründet, eine spezialisierte Business-KI zu entwickeln, die sich auf unternehmerische Fragen konzentriert und Menschen Schritt für Schritt beim Aufbau eines zweiten Einkommens bis hin zu einem eigenständigen Business begleitet."],
+  ["Für wen ist Origin Income gedacht?", "Für Menschen, die wirklich weiterkommen wollen: Einsteiger genauso wie Personen, die bereits vieles ausprobiert haben. Entscheidend ist nicht der bisherige Wissensstand, sondern die Bereitschaft, Aufgaben umzusetzen, zu lernen und konsequent dranzubleiben."],
 ];
 
 export default function Home() {
@@ -720,7 +722,7 @@ export default function Home() {
                 <h3>Free</h3>
                 <p>Der intelligente Einstieg in dein persönliches Unternehmerprofil.</p>
                 <ul>
-                  <li>30-Fragen AI Discovery</li>
+                  <li>20-Fragen AI Discovery</li>
                   <li>Persönlicher Profil-Snapshot</li>
                   <li>Erste Business-Empfehlung</li>
                 </ul>
@@ -764,6 +766,15 @@ export default function Home() {
               unverbundene Tools. Sie brauchen ein intelligentes System, das ihre Situation versteht,
               Entscheidungen strukturiert und den nächsten sinnvollen Schritt sichtbar macht.
             </p>
+            <div className="swissTrust">
+              <div className="swissTrustMark" aria-hidden="true">+</div>
+              <div>
+                <small>MADE IN SWITZERLAND · ZÜRICH</small>
+                <strong>Swiss roots. Global ambition.</strong>
+                <p>„Ausreden sind die Zinsen, die du auf ein unerfülltes Leben zahlst.“</p>
+                <span>— Roger Streit, Founder & CEO</span>
+              </div>
+            </div>
             <div className="aboutPrinciples">
               <div><span>01</span><b>Personal before generic</b></div>
               <div><span>02</span><b>Execution before information</b></div>
@@ -854,9 +865,9 @@ export default function Home() {
         <section className="onboardCta shell">
           <div className="ctaGlow" />
           <p className="kicker">Origin AI Discovery</p>
-          <h2>30 Fragen.<br />Dein Business beginnt.</h2>
+          <h2>20 Fragen.<br />Dein Business beginnt.</h2>
           <p>
-            In weniger als zehn Minuten lernt Origin AI deine Ziele, Fähigkeiten,
+            In wenigen Minuten lernt Origin AI deine Ziele, Fähigkeiten,
             Möglichkeiten und Grenzen kennen. Danach entsteht dein persönlicher Business-Report.
           </p>
           <Link href="/onboarding">Meine AI Discovery starten <span>↗</span></Link>
@@ -865,7 +876,7 @@ export default function Home() {
 
       <footer className="footer shell">
         <div className="footerBrand"><Logo size={34} /><span>ORIGIN <b>INCOME</b></span></div>
-        <div>© 2026 Origin Income · The AI Operating System for Entrepreneurs</div>
+        <div>© 2026 Origin Income · Made in Switzerland · Zürich</div>
         <div>
           <a href="#pricing">Pricing</a>
           <a href="#faq">FAQ</a>
