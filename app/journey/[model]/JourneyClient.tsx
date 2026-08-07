@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { JourneyDefinition } from "../../../lib/journeys";
+import { loadBusinessDNA, saveBusinessDNA, upsertVaultAsset } from "../../../lib/vault";
 
 type VaultItem = { id:string; title:string; type:string; status:"ready"|"planned"; phase:number };
 type MissionDraft = {
@@ -88,17 +89,34 @@ export default function JourneyClient({ firstName, plan, journey }: { firstName:
     setDraft(next);
     localStorage.setItem(`${key}_mission1_draft`,JSON.stringify(next));
   }
+  function prepareVaultForPhase(phaseNumber:number){
+    const m=metaFor(journey,phaseNumber);
+    const now=new Date().toISOString();
+    m.vault.forEach((title,index)=>upsertVaultAsset({
+      id:`${journey.slug}-m${phaseNumber}-asset${index}`,title,
+      category:index===0?"Business":phaseNumber>=5?"Sales":"Dokumente",
+      type:index===0?"Canvas":"Blueprint",status:"prepared",journey:journey.slug,mission:phaseNumber,createdAt:now,updatedAt:now,source:"mission"
+    }));
+    if(journey.slug==="lead-generation-agency"&&phaseNumber===1){
+      const dna=loadBusinessDNA();
+      const chosen=draft.customNiche.trim()||draft.niche;
+      const positioning=draft.targetGroup&&draft.coreProblem&&draft.outcome?`Ich helfe ${draft.targetGroup}, die ${draft.coreProblem}, dabei ${draft.outcome}${draft.differentiator?`, ${draft.differentiator}`:""}.`:dna.positioning;
+      saveBusinessDNA({...dna,journey:journey.slug,niche:chosen||dna.niche,targetGroup:draft.targetGroup||dna.targetGroup,coreProblem:draft.coreProblem||dna.coreProblem,outcome:draft.outcome||dna.outcome,positioning});
+    }
+  }
   function toggle(i: number) {
     const id=`${active}-${i}`;
     const next = { ...done, [id]: !done[id] };
     setDone(next); persist(next, active);
     const willDone=phase.tasks.every((_,idx)=>next[`${active}-${idx}`]);
-    if(willDone && !phaseDone){setCelebrate(active);window.setTimeout(()=>setCelebrate(null),2800)}
+    if(willDone && !phaseDone){prepareVaultForPhase(active);setCelebrate(active);window.setTimeout(()=>setCelebrate(null),2800)}
   }
   function markTask(i:number,value=true){
     const id=`${active}-${i}`;
     const next={...done,[id]:value};
     setDone(next);persist(next,active);
+    const willDone=phase.tasks.every((_,idx)=>next[`${active}-${idx}`]);
+    if(willDone && !phaseDone){prepareVaultForPhase(active);setCelebrate(active);window.setTimeout(()=>setCelebrate(null),2800)}
   }
   function open(n: number) { setActive(n); persist(done,n); window.scrollTo({top:0,behavior:"smooth"}); }
 
@@ -129,8 +147,8 @@ export default function JourneyClient({ firstName, plan, journey }: { firstName:
 
         <div className="journeyBottom premiumBottom">
           <article><small>MISSION DELIVERABLE</small><h3>{phase.deliverable}</h3><p>Am Ende besitzt du einen echten Business-Baustein. Kein theoretisches Zertifikat, sondern etwas, das du für deinen Markt einsetzen kannst.</p><div className="deliverableReward">🏆 <span><small>BELOHNUNG</small><b>{meta.milestone}</b></span></div></article>
-          <article><small>BUSINESS VAULT</small><h3>Diese Assets werden vorbereitet.</h3><div className="vaultPreview">{meta.vault.map(x=><span key={x}><i>{phaseDone?"✓":"⌁"}</i><b>{x}</b><small>{phaseDone?"bereit":"mit Origin AI erstellbar"}</small></span>)}</div><button className="vaultButton" onClick={()=>setVaultOpen(true)}>Business Vault öffnen →</button></article>
-          <article className="originAiPrep"><small>ORIGIN AI · CO-FOUNDER</small><h3>Deine KI arbeitet später direkt mit dieser Mission.</h3><p>Origin AI kennt dann dein Assessment, deine Journey und deinen Fortschritt. Statt statischer Vorlagen erzeugst du genau das Dokument oder die Nachricht, die du gerade brauchst.</p><div className="aiActionList"><span>„Analysiere meine Nische“</span><span>„Schärfe meine Positionierung“</span><span>„Erstelle meine Value Proposition“</span></div><button disabled>Origin AI folgt in einem späteren Release</button></article>
+          <article><small>BUSINESS VAULT</small><h3>Diese Assets werden vorbereitet.</h3><div className="vaultPreview">{meta.vault.map(x=><span key={x}><i>{phaseDone?"✓":"⌁"}</i><b>{x}</b><small>{phaseDone?"bereit":"mit Origin AI erstellbar"}</small></span>)}</div><div className="vaultButtonRow"><button className="vaultButton" onClick={()=>setVaultOpen(true)}>Schnellansicht</button><Link className="vaultButton" href="/vault">Business Vault öffnen →</Link></div></article>
+          <article className="originAiPrep"><small>ORIGIN AI · CO-FOUNDER</small><h3>Deine KI arbeitet später direkt mit dieser Mission.</h3><p>Origin AI kennt dann dein Assessment, deine Journey und deinen Fortschritt. Statt statischer Vorlagen erzeugst du genau das Dokument oder die Nachricht, die du gerade brauchst.</p><div className="aiActionList"><span>„Analysiere meine Nische“</span><span>„Schärfe meine Positionierung“</span><span>„Erstelle meine Value Proposition“</span></div><Link className="originAiPrepButton" href="/vault">Origin AI Workflow öffnen →</Link></article>
         </div>
 
         <section className="readyCheck"><div><small>MISSION READY CHECK</small><h3>Bist du bereit für Mission {active+1}?</h3><p>Origin Income lässt dich erst weiter, wenn die entscheidenden Business-Bausteine stehen.</p></div><div className="readyChecklist">{phase.tasks.map((task,i)=><span key={task} className={done[`${active}-${i}`]?"ready":""}><i>{done[`${active}-${i}`]?"✓":"○"}</i>{task}</span>)}</div></section>
@@ -139,7 +157,7 @@ export default function JourneyClient({ firstName, plan, journey }: { firstName:
       </div>
     </section>
 
-    {vaultOpen&&<div className="vaultBackdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setVaultOpen(false)}}><section className="vaultModal"><button className="vaultClose" onClick={()=>setVaultOpen(false)}>×</button><small>ORIGIN BUSINESS VAULT</small><h2>Dein Unternehmen entsteht hier.</h2><p>Der Vault sammelt die Business Assets, die du während deiner Journey entwickelst. Origin AI wird diese später individuell aus deinen Daten generieren – statt dir generische Vorlagen vorzusetzen.</p><div className="vaultStats"><span><b>{readyVault}</b><small>bereit</small></span><span><b>{vaultItems.length-readyVault}</b><small>vorbereitet</small></span><span><b>7</b><small>Missionen</small></span></div><div className="vaultList">{vaultItems.map(x=><article key={x.id} className={x.status}><i>{x.status==="ready"?"✓":"⌁"}</i><div><small>MISSION {x.phase} · {x.type.toUpperCase()}</small><b>{x.title}</b></div><span>{x.status==="ready"?"Bereit":"Später mit Origin AI erstellen"}</span></article>)}</div></section></div>}
+    {vaultOpen&&<div className="vaultBackdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setVaultOpen(false)}}><section className="vaultModal"><button className="vaultClose" onClick={()=>setVaultOpen(false)}>×</button><small>ORIGIN BUSINESS VAULT</small><h2>Dein Unternehmen entsteht hier.</h2><p>Der Vault sammelt die Business Assets, die du während deiner Journey entwickelst. Origin AI wird diese später individuell aus deinen Daten generieren – statt dir generische Vorlagen vorzusetzen.</p><div className="vaultStats"><span><b>{readyVault}</b><small>bereit</small></span><span><b>{vaultItems.length-readyVault}</b><small>vorbereitet</small></span><span><b>7</b><small>Missionen</small></span></div><div className="vaultList">{vaultItems.map(x=><article key={x.id} className={x.status}><i>{x.status==="ready"?"✓":"⌁"}</i><div><small>MISSION {x.phase} · {x.type.toUpperCase()}</small><b>{x.title}</b></div><span>{x.status==="ready"?"Bereit":"Später mit Origin AI erstellen"}</span></article>)}</div><Link className="vaultFullLink" href="/vault">Vollständigen Business Vault öffnen →</Link></section></div>}
     {celebrate&&<div className="missionCelebration"><span>✓</span><small>MISSION {celebrate} ABGESCHLOSSEN</small><h2>{metaFor(journey,celebrate).milestone}</h2><p>Dein Business ist einen echten Schritt weiter.</p></div>}
   </main>;
 }
@@ -196,7 +214,7 @@ function GoldStandardMission({draft,updateDraft,done,markTask}:{draft:MissionDra
 
     <article className="missionStep actionPlan"><header><span>07</span><div><small>UMSETZEN · 5 MINUTEN</small><h2>Dein 24-Stunden-Action-Plan</h2></div></header><p>Mission 1 ist erst wertvoll, wenn du die Entscheidungen ausserhalb von Origin Income benutzt. Dein nächster Schritt ist bewusst klein: Validierung durch echte Marktreaktion.</p><div className="actionCards"><div><small>HEUTE</small><b>Speichere deine Positionierung</b><p>Nutze genau einen Satz als Arbeitsversion. Nicht mehr perfektionieren.</p></div><div><small>INNERHALB 24H</small><b>Sprich mit 3 echten Unternehmen</b><p>Keine Verkaufsshow. Frage nach aktuellem Kundengewinnungsprozess und Engpässen.</p></div><div><small>DANACH</small><b>Notiere Muster</b><p>Welche Probleme wiederholen sich? Genau daraus entsteht Mission 2: dein Angebot.</p></div></div></article>
 
-    <article className="originAiWorkflow"><div><small>ORIGIN AI · VORBEREITETER WORKFLOW</small><h2>Dein Co-Founder kennt diese Daten später bereits.</h2><p>Wenn Origin AI integriert ist, musst du deine Nische nicht nochmals erklären. Die KI erhält die Informationen dieser Mission und kann daraus unmittelbar weiterarbeiten.</p></div><div><button disabled>◎ Nische analysieren</button><button disabled>✦ Positionierung schärfen</button><button disabled>↗ Value Proposition erstellen</button></div></article>
+    <article className="originAiWorkflow"><div><small>ORIGIN AI · WORKFLOW READY</small><h2>Dein Co-Founder übernimmt diesen Kontext in den Business Vault.</h2><p>Deine Nische, Zielgruppe, Probleme und Positionierung werden als Business DNA vorbereitet. Im Vault kannst du daraus bereits AI-Workflows für Positionierung, Angebot, Preisliste, Landingpage oder Outreach anlegen.</p></div><div><Link href="/vault">◎ Nische analysieren</Link><Link href="/vault">✦ Positionierung schärfen</Link><Link href="/vault">↗ Value Proposition erstellen</Link></div></article>
 
     <article className="missionReadyPremium"><div><small>MISSION READY CHECK</small><h2>{missionReady?"Fundament steht. Mission 2 kann kommen.":"Bevor du weitergehst, schliesse diese fünf Punkte ab."}</h2><p>{missionReady?"Du hast jetzt eine fokussierte Nische, reale Marktevidenz und eine klare Arbeitspositionierung. In Mission 2 verwandeln wir das in ein konkretes Angebot.":"Kein künstliches Gatekeeping: Der Check stellt nur sicher, dass du die Entscheidungen getroffen hast, auf denen die nächste Mission aufbaut."}</p></div><div className="premiumReadyList">{missionSteps.map((x,i)=><span key={x.label} className={x.ready?"ready":""}><i>{x.ready?"✓":String(i+1).padStart(2,"0")}</i><b>{x.label}</b></span>)}</div></article>
 
